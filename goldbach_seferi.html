@@ -1,0 +1,2912 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goldbach Seferi - Bilim Projesi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a1a;
+    color: #e0e0f0;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    user-select: none;
+  }
+
+  #stars-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Setup Popup ── */
+  #setup-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 200;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #setup-overlay.hidden { display: none; }
+  .setup-box {
+    background: linear-gradient(135deg, #151530, #0a0a20);
+    border: 3px solid #ffd700;
+    border-radius: 20px;
+    padding: 40px 50px;
+    text-align: center;
+    box-shadow: 0 0 80px rgba(255,215,0,0.15);
+    max-width: 520px;
+    width: 90%;
+  }
+  .setup-box h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    color: #ffd700;
+    margin-bottom: 8px;
+  }
+  .setup-box .setup-subtitle {
+    font-size: 0.9rem;
+    color: #999;
+    margin-bottom: 25px;
+    line-height: 1.5;
+  }
+  .setup-box label {
+    display: block;
+    font-size: 1rem;
+    color: #ccc;
+    margin-bottom: 6px;
+    text-align: left;
+  }
+  .setup-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+    align-items: center;
+    justify-content: center;
+  }
+  .setup-row input {
+    width: 90px;
+    height: 40px;
+    background: #151530;
+    border: 2px solid #444;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    text-align: center;
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .setup-row input::-webkit-outer-spin-button,
+  .setup-row input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .setup-row input:focus { border-color: #ffd700; }
+  .setup-row span {
+    color: #ffd700;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  .setup-info {
+    font-size: 0.8rem;
+    color: #777;
+    margin-bottom: 20px;
+    line-height: 1.5;
+    background: rgba(255,215,0,0.05);
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: left;
+  }
+  .lang-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 22px;
+  }
+  .lang-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    padding: 8px 22px;
+    border: 2px solid #555;
+    background: transparent;
+    color: #888;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .lang-btn.active {
+    border-color: #ffd700;
+    color: #ffd700;
+    background: rgba(255,215,0,0.1);
+  }
+  .lang-btn:hover { border-color: #ffd700; color: #ffd700; }
+  #start-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    padding: 14px 50px;
+    border: 2px solid #ffd700;
+    background: linear-gradient(135deg, #3a2a00, #1a1500);
+    color: #ffd700;
+    border-radius: 12px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+  }
+  #start-btn:hover { background: linear-gradient(135deg, #5a4a00, #3a2a00); box-shadow: 0 0 25px rgba(255,215,0,0.3); }
+
+  /* Step indicator */
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #1a1530;
+    border: 2px solid #444;
+    color: #666;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+  }
+  .step-dot.active {
+    background: linear-gradient(135deg, #3a2a00, #1a1500);
+    border-color: #ffd700;
+    color: #ffd700;
+    box-shadow: 0 0 12px rgba(255,215,0,0.4);
+  }
+  .step-line {
+    width: 50px;
+    height: 2px;
+    background: #444;
+  }
+
+  /* Board size selector */
+  .size-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 14px;
+  }
+  .size-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3a2a00, #1a1500);
+    border: 2px solid #ffd700;
+    color: #ffd700;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .size-btn:hover { background: linear-gradient(135deg, #5a4a00, #3a2a00); transform: scale(1.1); }
+  .size-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+  .size-value {
+    text-align: center;
+    min-width: 100px;
+  }
+  .size-edge {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 900;
+    color: #ffd700;
+    line-height: 1.1;
+    text-shadow: 0 0 15px rgba(255,215,0,0.3);
+  }
+  .size-edge-label {
+    font-size: 0.75rem;
+    color: #888;
+    letter-spacing: 1px;
+  }
+
+  #board-preview {
+    display: block;
+    margin: 0 auto 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid #2a2a45;
+    border-radius: 10px;
+  }
+
+  .size-stats {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-bottom: 18px;
+  }
+  .size-stats strong { color: #fff; }
+  .stats-sep {
+    color: #555;
+    margin: 0 8px;
+  }
+
+  .step-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+  }
+  #next-btn, #back-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    padding: 10px 24px;
+    border: 2px solid #888;
+    background: transparent;
+    color: #aaa;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+  }
+  #next-btn:hover, #back-btn:hover { border-color: #ffd700; color: #ffd700; }
+
+  /* ── Market Popup ── */
+  #market-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 150;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  #market-overlay.visible { display: flex; }
+  .market-box {
+    background: linear-gradient(135deg, #1a1530, #0a0820);
+    border: 3px solid #ffd700;
+    border-radius: 20px;
+    padding: 30px 40px;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(255,215,0,0.2);
+    max-width: 480px;
+    width: 90%;
+  }
+  .market-knight {
+    width: 80px;
+    height: 95px;
+    margin: 0 auto 8px;
+  }
+  .market-box h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: #ffd700;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+  .market-msg {
+    font-size: 1rem;
+    color: #ddd;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .market-msg .player-color { font-weight: 700; }
+  .market-msg .points { color: #ffd700; font-weight: 700; font-size: 1.1rem; }
+  .market-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .market-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    background: linear-gradient(135deg, #1a2a4a, #0d1530);
+    border: 2px solid #2a4a7a;
+    border-radius: 10px;
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .market-option:hover:not(.disabled) {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, #2a3a5a, #1a2540);
+    transform: scale(1.02);
+  }
+  .market-option.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    filter: grayscale(80%);
+  }
+  .market-option .pkg-info { display: flex; align-items: center; gap: 10px; }
+  .market-option .pkg-icon { font-size: 1.4rem; }
+  .market-option .pkg-cost { color: #ffd700; font-weight: 700; }
+  #market-skip-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    padding: 8px 24px;
+    border: 2px solid #888;
+    background: transparent;
+    color: #aaa;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+  }
+  #market-skip-btn:hover { border-color: #ff5050; color: #ff5050; }
+
+  /* ── Placing Banner ── */
+  #placing-banner {
+    position: fixed;
+    top: 75px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(60,40,0,0.95), rgba(30,20,0,0.95));
+    border: 2px solid #ffd700;
+    border-radius: 30px;
+    padding: 8px 20px;
+    z-index: 50;
+    display: none;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 0 30px rgba(255,215,0,0.3);
+    animation: banner-pulse 2s ease-in-out infinite;
+  }
+  #placing-banner.visible { display: flex; }
+  @keyframes banner-pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(255,215,0,0.2); }
+    50% { box-shadow: 0 0 40px rgba(255,215,0,0.5); }
+  }
+  #placing-text {
+    color: #ffd700;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+  }
+  #placing-done-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 5px 14px;
+    border: 1px solid #ffd700;
+    background: transparent;
+    color: #ffd700;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+  }
+  #placing-done-btn:hover { background: rgba(255,215,0,0.15); }
+
+  /* Cursor on canvas during placing */
+  #board-canvas.placing { cursor: pointer; }
+
+  /* ── Main Layout ── */
+  #game-container {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-rows: 60px 1fr 260px;
+    height: 100vh;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    border-bottom: 2px solid #ffd700;
+    background: linear-gradient(180deg, rgba(15,15,30,0.95), rgba(10,10,25,0.9));
+    padding: 0 20px;
+  }
+  #header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.6rem;
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255,215,0,0.4);
+    letter-spacing: 3px;
+  }
+  #header .subtitle {
+    font-size: 0.8rem;
+    color: #888;
+    letter-spacing: 1px;
+  }
+  #lang-toggle, #reset-game-btn, #howto-btn, #conjecture-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    padding: 4px 12px;
+    border: 1px solid #555;
+    background: transparent;
+    color: #888;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-left: 8px;
+    letter-spacing: 1px;
+  }
+  #lang-toggle:hover { border-color: #ffd700; color: #ffd700; }
+  #howto-btn { border-color: #4a8a4a; color: #88cc88; }
+  #howto-btn:hover { border-color: #66ff66; color: #66ff66; background: rgba(80,255,80,0.08); }
+  #conjecture-btn { border-color: #4a6a8a; color: #88aacc; }
+  #conjecture-btn:hover { border-color: #66bbff; color: #66bbff; background: rgba(80,180,255,0.08); }
+  #reset-game-btn { border-color: #884444; color: #cc6666; }
+  #reset-game-btn:hover { border-color: #ff5050; color: #ff5050; background: rgba(255,80,80,0.08); }
+
+  /* ── Info Modal ── */
+  #info-modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 250;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #info-modal-overlay.visible { display: flex; }
+  .info-modal-box {
+    background: linear-gradient(135deg, #1a1530, #0a0820);
+    border: 3px solid #ffd700;
+    border-radius: 20px;
+    padding: 30px 35px;
+    box-shadow: 0 0 60px rgba(255,215,0,0.2);
+    max-width: 720px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  .info-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: transparent;
+    border: 1px solid #555;
+    color: #aaa;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+  .info-close-btn:hover { border-color: #ff5050; color: #ff5050; background: rgba(255,80,80,0.1); }
+  #info-modal-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: #ffd700;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    padding-right: 40px;
+  }
+  #info-modal-content {
+    color: #e0e0f0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  #info-modal-content h3 {
+    font-family: 'Orbitron', sans-serif;
+    color: #ffd700;
+    font-size: 1.05rem;
+    margin: 16px 0 8px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+  }
+  #info-modal-content p { margin-bottom: 10px; }
+  #info-modal-content ul, #info-modal-content ol {
+    padding-left: 24px;
+    margin-bottom: 12px;
+  }
+  #info-modal-content li { margin-bottom: 6px; }
+  #info-modal-content strong { color: #ffd700; }
+  #info-modal-content .blue { color: #66d0ff; font-weight: 700; }
+  #info-modal-content .red { color: #ff9090; font-weight: 700; }
+  #info-modal-content .green { color: #88dd88; font-weight: 700; }
+  #info-modal-content code {
+    background: rgba(255,215,0,0.08);
+    border: 1px solid #444;
+    color: #ffd700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+  }
+  #info-modal-content .example {
+    background: rgba(0,180,255,0.06);
+    border-left: 3px solid #00b4ff;
+    padding: 8px 12px;
+    margin: 10px 0;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+  }
+  #info-modal-content .fact-box {
+    background: rgba(255,215,0,0.06);
+    border: 1px solid #ffd700;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0;
+  }
+
+  /* ── Middle Area ── */
+  #middle {
+    display: grid;
+    grid-template-columns: 260px 1fr 260px;
+    gap: 10px;
+    padding: 10px;
+    overflow: hidden;
+  }
+
+  /* ── Player Panels ── */
+  .player-panel {
+    background: linear-gradient(180deg, rgba(20,20,40,0.9), rgba(15,15,30,0.95));
+    border: 2px solid #333;
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    transition: border-color 0.5s, box-shadow 0.5s;
+    overflow: hidden;
+  }
+  .player-panel.p1.active {
+    border-color: #00b4ff;
+    animation: glow-blue 2s ease-in-out infinite;
+  }
+  .player-panel.p2.active {
+    border-color: #ff5050;
+    animation: glow-red 2s ease-in-out infinite;
+  }
+  @keyframes glow-blue {
+    0%, 100% { box-shadow: 0 0 15px rgba(0,180,255,0.15), inset 0 0 15px rgba(0,180,255,0.03); border-color: #0088cc; }
+    50% { box-shadow: 0 0 35px rgba(0,180,255,0.4), inset 0 0 25px rgba(0,180,255,0.08); border-color: #00ccff; }
+  }
+  @keyframes glow-red {
+    0%, 100% { box-shadow: 0 0 15px rgba(255,80,80,0.15), inset 0 0 15px rgba(255,80,80,0.03); border-color: #cc3030; }
+    50% { box-shadow: 0 0 35px rgba(255,80,80,0.4), inset 0 0 25px rgba(255,80,80,0.08); border-color: #ff6060; }
+  }
+
+  .player-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .p1 .player-name { color: #00b4ff; }
+  .p2 .player-name { color: #ff5050; }
+
+  .warrior-container { width: 90px; height: 105px; position: relative; }
+
+  .power-section { width: 100%; }
+  .power-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #aaa;
+    margin-bottom: 3px;
+  }
+  .power-bar {
+    width: 100%;
+    height: 12px;
+    background: #1a1a30;
+    border-radius: 6px;
+    border: 1px solid #333;
+    overflow: hidden;
+  }
+  .power-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.8s ease;
+  }
+  .p1 .power-fill { background: linear-gradient(90deg, #0066cc, #00b4ff); }
+  .p2 .power-fill { background: linear-gradient(90deg, #cc2020, #ff5050); }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 0.8rem;
+    color: #999;
+  }
+  .stat-value { color: #ffd700; font-weight: 700; }
+
+  .discoveries {
+    width: 100%;
+    flex: 1;
+    overflow-y: auto;
+    font-size: 0.7rem;
+    color: #777;
+    margin-top: 3px;
+    min-height: 0;
+  }
+  .discoveries .title {
+    color: #aaa;
+    font-size: 0.75rem;
+    margin-bottom: 3px;
+    font-weight: 600;
+  }
+  .discovery-item {
+    padding: 2px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.68rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    line-height: 1.4;
+  }
+  .discovery-item.correct-entry { color: #5a5; }
+  .discovery-item.wrong-entry { color: #c55; }
+  .discovery-item .reason { color: #a88; font-size: 0.62rem; display: block; padding-left: 8px; }
+  .discovery-item .decomp-list { color: #7a7; font-size: 0.62rem; display: block; padding-left: 8px; }
+
+  .turn-indicator {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.7rem;
+    color: #ffd700;
+    margin-top: auto;
+    padding-top: 3px;
+    height: 20px;
+    visibility: hidden;
+  }
+  .player-panel.active .turn-indicator {
+    visibility: visible;
+    animation: pulse-text 1.8s ease-in-out infinite;
+  }
+
+  @keyframes pulse-text {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  /* ── Board Area ── */
+  #board-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  #board-canvas { border-radius: 12px; }
+
+  /* ── Bottom Panel ── */
+  #bottom {
+    display: grid;
+    grid-template-columns: 1fr 340px 1fr;
+    gap: 10px;
+    padding: 10px;
+    border-top: 1px solid #2a2a45;
+    background: linear-gradient(0deg, rgba(10,10,20,0.98), rgba(15,15,30,0.9));
+  }
+
+  /* Number Pick Area */
+  #pick-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .pick-display {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: #ffd700;
+    width: 120px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-shadow: 0 0 20px rgba(255,215,0,0.3);
+    overflow: hidden;
+  }
+  .pick-display.animating { animation: number-flash 0.08s infinite alternate; }
+  @keyframes number-flash {
+    0% { transform: scale(1); opacity: 0.7; }
+    100% { transform: scale(1.1); opacity: 1; }
+  }
+  .range-info {
+    font-size: 0.75rem;
+    color: #666;
+  }
+  #pick-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    padding: 10px 30px;
+    border: 2px solid #ffd700;
+    background: linear-gradient(135deg, #3a2a00, #1a1500);
+    color: #ffd700;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+  }
+  #pick-btn:hover { background: linear-gradient(135deg, #5a4a00, #3a2a00); box-shadow: 0 0 20px rgba(255,215,0,0.3); }
+  #pick-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Input Area */
+  #input-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  #target-display {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: #ccc;
+    text-align: center;
+    min-height: 28px;
+  }
+  #target-display .target-num {
+    color: #ffd700;
+    font-size: 1.6rem;
+    font-weight: 900;
+  }
+  #timer-bar {
+    width: 100%;
+    height: 6px;
+    background: #1a1a30;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  #timer-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff3030, #ffd700, #00dd66);
+    border-radius: 3px;
+    transition: width 0.3s linear;
+    width: 100%;
+  }
+  #timer-text {
+    font-size: 0.8rem;
+    color: #888;
+    min-height: 18px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .prime-input {
+    width: 70px;
+    height: 38px;
+    background: #151530;
+    border: 2px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .prime-input:focus { border-color: #ffd700; }
+  .prime-input.correct { border-color: #00dd66; background: rgba(0,220,100,0.1); }
+  .prime-input.wrong { border-color: #ff3030; background: rgba(255,50,50,0.1); }
+  .input-plus { color: #ffd700; font-size: 1.2rem; font-weight: 700; }
+  .input-equals { color: #888; font-size: 1rem; }
+
+  #submit-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 8px 24px;
+    border: 2px solid #00dd66;
+    background: linear-gradient(135deg, #0a2a0a, #051505);
+    color: #00dd66;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+  }
+  #submit-btn:hover { background: linear-gradient(135deg, #1a4a1a, #0a2a0a); box-shadow: 0 0 15px rgba(0,220,100,0.2); }
+  #submit-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .submitted-answers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 50px;
+    overflow-y: auto;
+    justify-content: center;
+  }
+  .answer-tag {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+  }
+  .answer-tag.correct { background: rgba(0,180,80,0.2); border: 1px solid #0a4; color: #0d6; }
+  .answer-tag.wrong { background: rgba(180,0,0,0.2); border: 1px solid #a00; color: #d33; }
+
+  /* Info Area */
+  #info-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px;
+  }
+  #result-message {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    text-align: center;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.4;
+  }
+  #all-decompositions {
+    font-size: 0.75rem;
+    color: #777;
+    text-align: center;
+    max-height: 80px;
+    overflow-y: auto;
+    line-height: 1.5;
+  }
+  #goldbach-fact {
+    font-size: 0.7rem;
+    color: #555;
+    text-align: center;
+    font-style: italic;
+    margin-top: auto;
+    line-height: 1.3;
+    padding: 0 5px;
+  }
+
+  /* ── Game Over ── */
+  #game-over {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 100;
+    background: rgba(0,0,0,0.7);
+    align-items: center;
+    justify-content: center;
+  }
+  #game-over.visible { display: flex; }
+  .game-over-box {
+    background: linear-gradient(135deg, #151530, #0a0a20);
+    border: 3px solid #ffd700;
+    border-radius: 20px;
+    padding: 40px 60px;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(255,215,0,0.2);
+  }
+  .game-over-box h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    color: #ffd700;
+    margin-bottom: 10px;
+  }
+  .game-over-box .winner-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+  }
+  .game-over-box .stats {
+    font-size: 1.1rem;
+    color: #aaa;
+    margin-bottom: 20px;
+    line-height: 1.8;
+  }
+  #restart-btn {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    padding: 12px 40px;
+    border: 2px solid #ffd700;
+    background: linear-gradient(135deg, #3a2a00, #1a1500);
+    color: #ffd700;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.3s;
+  }
+  #restart-btn:hover { background: linear-gradient(135deg, #5a4a00, #3a2a00); }
+
+  .score-popup {
+    position: fixed;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    pointer-events: none;
+    z-index: 50;
+    animation: float-up 1.5s ease-out forwards;
+  }
+  @keyframes float-up {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-80px) scale(1.5); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+
+<!-- ── Setup Popup ── -->
+<div id="setup-overlay">
+  <div class="setup-box">
+    <h2 id="setup-title">GOLDBACH SEFERİ</h2>
+
+    <!-- Language selector (always visible) -->
+    <div class="lang-row">
+      <button class="lang-btn active" id="lang-tr" onclick="setLang('tr')">Türkçe</button>
+      <button class="lang-btn" id="lang-en" onclick="setLang('en')">English</button>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="step-indicator">
+      <div class="step-dot active" id="step-dot-1">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="step-dot-2">2</div>
+    </div>
+
+    <!-- ─── STEP 1: Board Size ─── -->
+    <div class="setup-step" id="setup-step-1">
+      <div class="setup-subtitle" id="step1-desc">Önce oyun tahtasının büyüklüğünü seçin. Bir kenarda kaç bölge olacağını belirleyin.</div>
+
+      <div class="size-selector">
+        <button class="size-btn" onclick="changeEdge(-1)">−</button>
+        <div class="size-value">
+          <div class="size-edge"><span id="size-edge-num">5</span></div>
+          <div class="size-edge-label" id="size-edge-label">bölge / kenar</div>
+        </div>
+        <button class="size-btn" onclick="changeEdge(+1)">+</button>
+      </div>
+
+      <canvas id="board-preview" width="320" height="200"></canvas>
+
+      <div class="size-stats">
+        <span id="size-stats-cells">Toplam: <strong>61</strong> hücre</span>
+        <span class="stats-sep">•</span>
+        <span id="size-stats-range">Önerilen min: <strong style="color:#ffd700">4 - 60</strong></span>
+      </div>
+
+      <button id="next-btn" onclick="goToStep2()"><span class="lbl-next">DEVAM ET →</span></button>
+    </div>
+
+    <!-- ─── STEP 2: Number Range ─── -->
+    <div class="setup-step" id="setup-step-2" style="display:none">
+      <div class="setup-subtitle" id="step2-desc">Şimdi sayı aralığını belirleyin. Her turda bu aralıktan rastgele bir çift sayı seçilecek ve iki asalın toplamı olarak yazmanız istenecektir.</div>
+
+      <label id="range-label">Sayı Aralığı (çift sayılar):</label>
+      <div class="setup-row">
+        <input type="number" id="range-min" value="4" min="4" step="2" readonly style="opacity:0.6;cursor:not-allowed">
+        <span>—</span>
+        <input type="number" id="range-max" value="100" min="8" step="2">
+      </div>
+
+      <div class="setup-info" id="setup-info-text">
+        ℹ️ Seçilen tahta için <strong id="recommended-range">6-100</strong> aralığı önerilir.<br>
+        Daha küçük aralık seçerseniz oyun çok uzun sürebilir.
+      </div>
+
+      <div class="step-buttons">
+        <button id="back-btn" onclick="goToStep1()"><span class="lbl-back">← GERİ</span></button>
+        <button id="start-btn" onclick="startGame()">OYUNU BAŞLAT</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Market Popup ── -->
+<div id="market-overlay">
+  <div class="market-box">
+    <div class="market-knight"><canvas id="market-warrior" width="80" height="95"></canvas></div>
+    <h2 id="market-title">MARKET</h2>
+    <div class="market-msg" id="market-msg"></div>
+    <div class="market-options" id="market-options"></div>
+    <button id="market-skip-btn" onclick="skipMarket()"><span class="lbl-skip">VAZGEÇ</span></button>
+  </div>
+</div>
+
+<!-- ── Info Modal (How to Play / Goldbach Conjecture) ── -->
+<div id="info-modal-overlay" onclick="if(event.target===this) closeInfoModal()">
+  <div class="info-modal-box">
+    <button class="info-close-btn" onclick="closeInfoModal()">×</button>
+    <h2 id="info-modal-title"></h2>
+    <div id="info-modal-content"></div>
+  </div>
+</div>
+
+<!-- ── Placing Banner ── -->
+<div id="placing-banner">
+  <span id="placing-text"></span>
+  <button id="placing-done-btn" onclick="endPlacing()"><span class="lbl-done">BİTİR</span></button>
+</div>
+
+<div id="game-container">
+  <!-- Header -->
+  <div id="header">
+    <h1 id="header-title">GOLDBACH SEFERİ</h1>
+    <span class="subtitle" id="header-subtitle">Bilim Projesi • Goldbach Sanısı Keşif Oyunu</span>
+    <button id="howto-btn" onclick="openInfoModal('howto')"><span class="lbl-howto">📖 NASIL OYNANIR</span></button>
+    <button id="conjecture-btn" onclick="openInfoModal('conjecture')"><span class="lbl-conjecture">ℹ️ GOLDBACH SANISI</span></button>
+    <button id="lang-toggle" onclick="toggleLang()">EN</button>
+    <button id="reset-game-btn" onclick="resetGame()" title="Oyunu sıfırla"><span class="lbl-reset">↻ SIFIRLA</span></button>
+  </div>
+
+  <!-- Middle -->
+  <div id="middle">
+    <!-- Player 1 -->
+    <div class="player-panel p1 active" id="panel-p1">
+      <div class="player-name" id="p1-name">MAVİ ŞÖVALYE</div>
+      <div class="warrior-container"><canvas id="warrior1-canvas" width="90" height="105"></canvas></div>
+      <div class="power-section">
+        <div class="power-label"><span class="lbl-power">Kale</span><span id="p1-power-text">❤❤❤</span></div>
+        <div class="power-bar"><div class="power-fill" id="p1-power-fill" style="width:100%"></div></div>
+      </div>
+      <div class="stat-row"><span class="lbl-score">Puan</span><span class="stat-value" id="p1-score">0</span></div>
+      <div class="stat-row"><span class="lbl-territory">Bölge</span><span class="stat-value" id="p1-territory">0</span></div>
+      <div class="discoveries" id="p1-discoveries"><div class="title lbl-history">Geçmiş:</div></div>
+      <div class="turn-indicator lbl-your-turn">Sıra Sende</div>
+    </div>
+
+    <!-- Board -->
+    <div id="board-area">
+      <canvas id="board-canvas"></canvas>
+    </div>
+
+    <!-- Player 2 -->
+    <div class="player-panel p2" id="panel-p2">
+      <div class="player-name" id="p2-name">KIRMIZI ŞÖVALYE</div>
+      <div class="warrior-container"><canvas id="warrior2-canvas" width="90" height="105"></canvas></div>
+      <div class="power-section">
+        <div class="power-label"><span class="lbl-power">Kale</span><span id="p2-power-text">❤❤❤</span></div>
+        <div class="power-bar"><div class="power-fill" id="p2-power-fill" style="width:100%"></div></div>
+      </div>
+      <div class="stat-row"><span class="lbl-score">Puan</span><span class="stat-value" id="p2-score">0</span></div>
+      <div class="stat-row"><span class="lbl-territory">Bölge</span><span class="stat-value" id="p2-territory">0</span></div>
+      <div class="discoveries" id="p2-discoveries"><div class="title lbl-history">Geçmiş:</div></div>
+      <div class="turn-indicator lbl-your-turn">Sıra Sende</div>
+    </div>
+  </div>
+
+  <!-- Bottom -->
+  <div id="bottom">
+    <!-- Number Pick -->
+    <div id="pick-area">
+      <div class="range-info" id="range-display"></div>
+      <div class="pick-display" id="pick-display">?</div>
+      <button id="pick-btn" onclick="pickNumber()"><span class="lbl-pick">SAYI SEÇ</span></button>
+    </div>
+
+    <!-- Input -->
+    <div id="input-area">
+      <div id="target-display" class="lbl-pick-start">Sayı seçerek başla!</div>
+      <div id="timer-bar"><div id="timer-fill"></div></div>
+      <div id="timer-text"></div>
+      <div class="input-row">
+        <input type="number" class="prime-input" id="input-a" placeholder="1." min="2" disabled>
+        <span class="input-plus">+</span>
+        <input type="number" class="prime-input" id="input-b" placeholder="2." min="2" disabled>
+        <span class="input-equals">=</span>
+        <span id="input-sum" style="color:#ffd700;font-weight:700;min-width:30px">?</span>
+        <button id="submit-btn" disabled><span class="lbl-send">GÖNDER</span></button>
+      </div>
+      <div class="submitted-answers" id="submitted-answers"></div>
+    </div>
+
+    <!-- Info -->
+    <div id="info-area">
+      <div id="result-message"></div>
+      <div id="all-decompositions"></div>
+      <div id="goldbach-fact">Goldbach Sanısı (1742): Her çift sayı iki asal sayının toplamı olarak yazılabilir. 280 yıldır kanıtlanamadı!</div>
+    </div>
+  </div>
+</div>
+
+<!-- Game Over -->
+<div id="game-over">
+  <div class="game-over-box">
+    <h2 id="go-title">KAZANAN!</h2>
+    <div class="winner-name" id="winner-name"></div>
+    <div class="stats" id="winner-stats"></div>
+    <button id="restart-btn"><span class="lbl-restart">TEKRAR OYNA</span></button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  LOCALIZATION
+// ═══════════════════════════════════════════════════════
+
+let currentLang = 'tr';
+
+const LANG = {
+  tr: {
+    title: 'GOLDBACH SEFERİ',
+    subtitle: 'Bilim Projesi • Goldbach Sanısı Keşif Oyunu',
+    setupTitle: 'GOLDBACH SEFERİ',
+    step1Desc: 'Önce oyun tahtasının büyüklüğünü seçin. Bir kenarda kaç bölge olacağını belirleyin.',
+    step2Desc: 'Şimdi sayı aralığını belirleyin. Her turda bu aralıktan rastgele bir çift sayı seçilecek ve iki asalın toplamı olarak yazmanız istenecektir.',
+    edge: 'kenar',
+    cellsLabel: 'bölge',
+    edgeFullLabel: 'bölge / kenar',
+    totalCells: 'Toplam',
+    recommendedMin: 'Önerilen min',
+    infoBoardSize: 'Seçtiğiniz tahta:',
+    infoMinIs: 'Bu tahta için minimum aralık:',
+    infoLowerWarn: 'Daha küçük aralık seçilemez.',
+    next: 'DEVAM ET →', back: '← GERİ',
+    rangeLabel: 'Sayı Aralığı (çift sayılar):',
+    startBtn: 'OYUNU BAŞLAT',
+    p1Name: 'MAVİ ŞÖVALYE',
+    p2Name: 'KIRMIZI ŞÖVALYE',
+    power: 'Kale',
+    score: 'Puan',
+    territory: 'Bölge',
+    level: 'Seviye',
+    history: 'Geçmiş:',
+    yourTurn: 'Sıra Sende',
+    pick: 'SAYI SEÇ',
+    pickStart: 'Sayı seçerek başla!',
+    send: 'GÖNDER',
+    rangeDisplay: 'Aralık: {min} — {max}',
+    targetMsg: '<span class="target-num">{n}</span> sayısını iki asalın toplamı olarak yaz!',
+    seconds: '{n} saniye',
+    correct: 'Doğru! {a} + {b} = {t}',
+    wrongNotPrimeBoth: '{a} ve {b} asal değil!',
+    wrongNotPrimeA: '{a} asal değil! ({a} = {f})',
+    wrongNotPrimeB: '{b} asal değil! ({b} = {f})',
+    wrongSum: '{a} + {b} = {s}, {t} değil!',
+    wrong: 'Yanlış! {reason}',
+    alreadyFound: 'Bu ayrışımı zaten buldun!',
+    perfect: 'MÜKEMMEL! Tümünü buldun! +{s} puan',
+    partial: '{f}/{t} ayrışım bulundu. +{s} puan',
+    none: 'Hiç ayrışım bulunamadı. +0 puan',
+    allDecomps: 'Tüm ayrışımlar ({n}):',
+    found: 'Bulunan',
+    wrongCount: 'Yanlış',
+    winner: 'KAZANAN!',
+    restart: 'TEKRAR OYNA',
+    fetchedTerritory: 'Fethedilen Bölge',
+    totalTurns: 'Toplam Tur',
+    fact: 'Goldbach Sanısı (1742): Her çift sayı iki asal sayının toplamı olarak yazılabilir. 280 yıldır kanıtlanamadı!',
+    entryCorrect: '✓ {t} = {a} + {b}',
+    entryWrong: '✗ {a} + {b}',
+    turnSummary: '  → {f}/{total} bulundu | +{s} puan',
+    allWere: '  Tümü: {list}',
+    blue: 'Mavi',
+    red: 'Kırmızı',
+    marketMsg: '{color} Şövalye, {points} puanın var. Marketten alışveriş yapmak ister misin?',
+    region: 'Bölge',
+    regionPlural: '',
+    points: 'puan',
+    noAfford: 'Maalesef yeterli puanın yok!',
+    skip: 'VAZGEÇ',
+    placingMsg: 'Bölge yerleştir: {n} kaldı',
+    done: 'BİTİR',
+    reset: '↻ SIFIRLA',
+    resetConfirm: 'Oyun sıfırlanacak. Emin misin?',
+    howto: '📖 NASIL OYNANIR',
+    conjecture: 'ℹ️ GOLDBACH SANISI',
+    howtoTitle: '📖 NASIL OYNANIR',
+    conjectureTitle: 'ℹ️ GOLDBACH SANISI',
+    howtoContent: `
+      <h3>🎯 Oyunun Amacı</h3>
+      <p>Bu oyun <strong>2 kişilik</strong> bir strateji oyunudur. Amaç, <span class="red">rakibin kalesini yıkmak</span> (3 cana indirmek) iken kendi <span class="blue">kalenin ayakta kalmasını</span> sağlamaktır.</p>
+
+      <h3>🏰 Tahta ve Kaleler</h3>
+      <p>Oyun altıgen hücrelerden oluşan bir tahtada oynanır. Oyun başında her oyuncunun <strong>1 kalesi</strong> vardır:</p>
+      <ul>
+        <li><span class="blue">Mavi Şövalye</span>'nin kalesi en sol kenarın ortasında</li>
+        <li><span class="red">Kırmızı Şövalye</span>'nin kalesi en sağ kenarın ortasında</li>
+      </ul>
+      <p>Her kalenin <strong>3 canı</strong> vardır. Canlar kalenin üstünde ❤❤❤ olarak gösterilir.</p>
+
+      <h3>🎲 Bir Tur Nasıl Oynanır?</h3>
+      <ol>
+        <li><strong>Sayı Seç:</strong> Sıran geldiğinde "SAYI SEÇ" butonuna bas. Belirlediğin aralıktan rastgele bir <strong>çift sayı</strong> çıkar.</li>
+        <li><strong>Ayrışım Yaz:</strong> <strong>30 saniye</strong> içinde bu sayıyı iki asal sayının toplamı olarak yazmaya çalış.
+          <div class="example">Örnek: Sayı 30 ise → 7+23 ✓, 11+19 ✓, 13+17 ✓ (3 farklı ayrışım)</div>
+        </li>
+        <li><strong>Puan Kazan:</strong>
+          <ul>
+            <li>Her doğru ayrışım: <span class="green">+10 puan</span></li>
+            <li>Tüm ayrışımları bulursan: <span class="green">+15 bonus puan</span></li>
+            <li>Yarıdan fazlasını bulursan: <span class="green">+5 bonus puan</span></li>
+            <li>Yanlış cevap (asal olmayan veya toplam tutmayan): <span class="red">-5 puan</span></li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>🛒 Market</h3>
+      <p>Tur bitince <strong>market açılır</strong>. Kazandığın puanlarla bölge satın alabilirsin:</p>
+      <ul>
+        <li><strong>1 bölge = 10 puan</strong></li>
+        <li><strong>2 bölge = 20 puan</strong></li>
+        <li><strong>5 bölge = 50 puan</strong></li>
+      </ul>
+      <p>Yetersiz puanın varsa o seçenek <strong>grileşir</strong>. Hiçbirine yetmiyorsa otomatik olarak sıra rakibe geçer. İstemezsen <strong>VAZGEÇ</strong> butonuyla satın almadan çıkabilirsin.</p>
+
+      <h3>📍 Bölge Yerleştirme</h3>
+      <p>Bölge satın aldıktan sonra tahta üzerinde yerleştirme yaparsın:</p>
+      <ul>
+        <li>Sadece <strong>kalenin veya mevcut bölgelerinin komşusuna</strong> yerleştirebilirsin</li>
+        <li>Yerleştirebileceğin yerler <strong>açık renkte parlar</strong></li>
+        <li>Ulaşamayacağın hücreler <strong>siyahlaşır</strong></li>
+        <li>Boş hücreye tık → <span class="green">kendi rengine boyanır</span></li>
+      </ul>
+
+      <h3>⚔️ Saldırı Mekaniği</h3>
+      <p>Komşundaki <strong>rakip bölgelerine</strong> de saldırabilirsin:</p>
+      <ul>
+        <li>Rakip bölgesine 1 saldırı → <strong>nötr olur</strong> (boş hale gelir)</li>
+        <li>Nötr olan bölgeyi alabilmen için <strong>tekrar tıklaman gerekir</strong></li>
+        <li>Rakip kaleye saldırı → <span class="red">-1 can</span></li>
+      </ul>
+
+      <h3>🏆 Kazanma</h3>
+      <p>Rakibin kalesini <strong>3 saldırıyla yıkarsan</strong> (canı 0'a inerse) ve kendi kalen hâlâ ayaktaysa <strong>oyunu kazanırsın</strong>!</p>
+
+      <h3>💡 İpuçları</h3>
+      <ul>
+        <li>Bazı sayılar tek ayrışıma sahiptir, bazıları çok fazlasına. Büyük sayılarda genelde daha fazla ayrışım vardır.</li>
+        <li><strong>6'nın katı</strong> olan sayılarda (12, 18, 24...) genelde daha çok ayrışım bulunur.</li>
+        <li>Bölge biriktirip büyük paket almak veya küçük adımlarla kaleye yaklaşmak — strateji senin elinde!</li>
+        <li>Rakibin yaklaşırsa, savunma için bölge satın almayı düşün.</li>
+      </ul>
+    `,
+    conjectureContent: `
+      <h3>📜 Kim Önerdi?</h3>
+      <p>Goldbach Sanısı, <strong>1742 yılında</strong> Prusyalı matematikçi <strong>Christian Goldbach</strong> tarafından önerilmiştir. Goldbach, dönemin en büyük matematikçilerinden biri olan <strong>Leonhard Euler</strong>'e yazdığı bir mektupta bu fikri ortaya atmıştır.</p>
+
+      <h3>🤔 Nedir?</h3>
+      <div class="fact-box">
+        <strong>"4'ten büyük her çift sayı, iki asal sayının toplamı olarak yazılabilir."</strong>
+      </div>
+      <p>Yani aklınıza gelen <em>herhangi bir çift sayı</em> alın (örneğin 100), bu sayıyı toplamları o sayıya eşit olacak şekilde <strong>iki asal sayı</strong> bulabilirsiniz.</p>
+
+      <h3>🔢 Örnekler</h3>
+      <div class="example">
+        4 = 2 + 2<br>
+        6 = 3 + 3<br>
+        10 = 3 + 7 = 5 + 5<br>
+        20 = 3 + 17 = 7 + 13<br>
+        30 = 7 + 23 = 11 + 19 = 13 + 17<br>
+        100 = 3 + 97 = 11 + 89 = 17 + 83 = 29 + 71 = 41 + 59 = 47 + 53<br>
+        1000 = 3 + 997 = 17 + 983 = ... (28 farklı yol!)
+      </div>
+      <p>Görüldüğü gibi sayı büyüdükçe genelde daha fazla "Goldbach çifti" buluyoruz.</p>
+
+      <h3>❓ Asal Sayı Nedir?</h3>
+      <p><strong>Asal sayı</strong>, sadece <strong>1'e</strong> ve <strong>kendisine</strong> bölünebilen, 1'den büyük doğal sayılardır.</p>
+      <p>İlk asal sayılar: <code>2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97...</code></p>
+      <p><strong>Önemli:</strong> 1 asal sayı <strong>değildir</strong>. 2 ise tek çift asal sayıdır.</p>
+
+      <h3>🧐 Neden Bu Kadar İlginç?</h3>
+      <p>Goldbach Sanısı, ifade edilmesi son derece basit ama kanıtlanması inanılmaz zor bir matematiksel iddiadır. Şu ana kadar:</p>
+      <ul>
+        <li>Bilgisayarlarla <strong>4 × 10¹⁸</strong>'e (4 kentilyon!) kadar tüm çift sayılar test edilmiş, hepsi sanıyı doğrulamıştır.</li>
+        <li>Yani <strong>tek bir karşı örnek bile bulunamamıştır</strong>.</li>
+        <li>Ama matematikçiler 280 yıldır bu iddianın <strong>tüm çift sayılar için</strong> doğru olduğunu kanıtlayamamıştır.</li>
+      </ul>
+
+      <div class="fact-box">
+        💰 <strong>Eğlenceli bilgi:</strong> 2000 yılında bir yayıncı, kim Goldbach Sanısı'nı kanıtlarsa <strong>1 milyon dolar ödül</strong> vereceğini açıklamıştı. Henüz kimse alamadı!
+      </div>
+
+      <h3>🌍 Neden Önemli?</h3>
+      <p>Goldbach Sanısı, sayılar teorisinin en ünlü açık problemlerinden biridir. Bu tür problemler:</p>
+      <ul>
+        <li>Asal sayıların gizemli dağılımını anlamamıza yardım eder</li>
+        <li>Modern <strong>kriptografi</strong> (örn. WhatsApp şifreleme, internet bankacılığı) asal sayılara dayanır</li>
+        <li>Yeni matematiksel araçlar geliştirilmesine zemin hazırlar</li>
+      </ul>
+
+      <h3>📊 Goldbach Kuyruklu Yıldızı</h3>
+      <p>Her çift sayının kaç farklı Goldbach ayrışımı olduğunu grafiğe dökersen, ortaya <strong>"Goldbach Kuyruklu Yıldızı"</strong> denilen güzel bir desen çıkar. Bazı çizgiler diğerlerinden daha kalındır — özellikle <strong>6'nın katları</strong> daha çok ayrışıma sahiptir.</p>
+
+      <h3>🎮 Bu Oyunda Ne Yapıyoruz?</h3>
+      <p>Bu oyunda her tur sana rastgele bir çift sayı verilir ve sen onun Goldbach ayrışımlarını bulmaya çalışırsın. Yani aslında 280 yıllık ünlü bir matematik problemini <strong>kendi gözlerinle test ediyorsun</strong>!</p>
+    `
+  },
+  en: {
+    title: 'GOLDBACH QUEST',
+    subtitle: 'Science Project • Goldbach Conjecture Discovery Game',
+    setupTitle: 'GOLDBACH QUEST',
+    step1Desc: 'First, choose the board size. Pick how many cells will be on each edge.',
+    step2Desc: 'Now choose the number range. Each turn a random even number from this range will be picked and you will need to express it as the sum of two primes.',
+    edge: 'edge',
+    cellsLabel: 'cells',
+    edgeFullLabel: 'cells / edge',
+    totalCells: 'Total',
+    recommendedMin: 'Recommended min',
+    infoBoardSize: 'Selected board:',
+    infoMinIs: 'Minimum range for this board:',
+    infoLowerWarn: 'Cannot go lower.',
+    next: 'CONTINUE →', back: '← BACK',
+    rangeLabel: 'Number Range (even numbers):',
+    startBtn: 'START GAME',
+    p1Name: 'BLUE KNIGHT',
+    p2Name: 'RED KNIGHT',
+    power: 'Castle',
+    score: 'Score',
+    territory: 'Territory',
+    level: 'Level',
+    history: 'History:',
+    yourTurn: 'Your Turn',
+    pick: 'PICK NUMBER',
+    pickStart: 'Pick a number to start!',
+    send: 'SUBMIT',
+    rangeDisplay: 'Range: {min} — {max}',
+    targetMsg: 'Write <span class="target-num">{n}</span> as the sum of two primes!',
+    seconds: '{n} seconds',
+    correct: 'Correct! {a} + {b} = {t}',
+    wrongNotPrimeBoth: '{a} and {b} are not prime!',
+    wrongNotPrimeA: '{a} is not prime! ({a} = {f})',
+    wrongNotPrimeB: '{b} is not prime! ({b} = {f})',
+    wrongSum: '{a} + {b} = {s}, not {t}!',
+    wrong: 'Wrong! {reason}',
+    alreadyFound: 'Already found this decomposition!',
+    perfect: 'PERFECT! Found all! +{s} points',
+    partial: '{f}/{t} decompositions found. +{s} points',
+    none: 'No decomposition found. +0 points',
+    allDecomps: 'All decompositions ({n}):',
+    found: 'Found',
+    wrongCount: 'Wrong',
+    winner: 'WINNER!',
+    restart: 'PLAY AGAIN',
+    fetchedTerritory: 'Territory Claimed',
+    totalTurns: 'Total Turns',
+    fact: 'Goldbach Conjecture (1742): Every even number can be written as the sum of two primes. Unproven for 280 years!',
+    entryCorrect: '✓ {t} = {a} + {b}',
+    entryWrong: '✗ {a} + {b}',
+    turnSummary: '  → {f}/{total} found | +{s} pts',
+    allWere: '  All: {list}',
+    blue: 'Blue',
+    red: 'Red',
+    marketMsg: '{color} Knight, you have {points} points. Want to shop at the market?',
+    region: 'Region',
+    regionPlural: 's',
+    points: 'pts',
+    noAfford: 'Sorry, you don\'t have enough points!',
+    skip: 'SKIP',
+    placingMsg: 'Place region: {n} left',
+    done: 'DONE',
+    reset: '↻ RESET',
+    resetConfirm: 'The game will be reset. Are you sure?',
+    howto: '📖 HOW TO PLAY',
+    conjecture: 'ℹ️ GOLDBACH CONJECTURE',
+    howtoTitle: '📖 HOW TO PLAY',
+    conjectureTitle: 'ℹ️ THE GOLDBACH CONJECTURE',
+    howtoContent: `
+      <h3>🎯 Goal of the Game</h3>
+      <p>This is a <strong>2-player</strong> strategy game. The goal is to <span class="red">destroy your opponent's castle</span> (reduce its HP to 0) while <span class="blue">keeping your own castle alive</span>.</p>
+
+      <h3>🏰 Board and Castles</h3>
+      <p>The game is played on a hexagonal board. Each player starts with <strong>1 castle</strong>:</p>
+      <ul>
+        <li><span class="blue">Blue Knight</span>'s castle: middle of the leftmost edge</li>
+        <li><span class="red">Red Knight</span>'s castle: middle of the rightmost edge</li>
+      </ul>
+      <p>Each castle has <strong>3 HP</strong> shown above as ❤❤❤.</p>
+
+      <h3>🎲 How a Turn Works</h3>
+      <ol>
+        <li><strong>Pick Number:</strong> On your turn, click "PICK NUMBER". A random <strong>even number</strong> from your chosen range appears.</li>
+        <li><strong>Write Decompositions:</strong> Within <strong>30 seconds</strong>, write this number as the sum of two prime numbers.
+          <div class="example">Example: If 30 → 7+23 ✓, 11+19 ✓, 13+17 ✓ (3 different decompositions)</div>
+        </li>
+        <li><strong>Earn Points:</strong>
+          <ul>
+            <li>Each correct decomposition: <span class="green">+10 points</span></li>
+            <li>Find all decompositions: <span class="green">+15 bonus points</span></li>
+            <li>Find more than half: <span class="green">+5 bonus points</span></li>
+            <li>Wrong answer (non-prime or wrong sum): <span class="red">-5 points</span></li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>🛒 Market</h3>
+      <p>After the turn, the <strong>market opens</strong>. Spend your points to buy regions:</p>
+      <ul>
+        <li><strong>1 region = 10 points</strong></li>
+        <li><strong>2 regions = 20 points</strong></li>
+        <li><strong>5 regions = 50 points</strong></li>
+      </ul>
+      <p>Insufficient points = the option <strong>grays out</strong>. If you can't afford anything, the turn passes automatically. You can always click <strong>SKIP</strong> to skip shopping.</p>
+
+      <h3>📍 Region Placement</h3>
+      <p>After buying regions, place them on the board:</p>
+      <ul>
+        <li>You can only place <strong>adjacent to your castle or existing regions</strong></li>
+        <li>Available cells <strong>glow in light color</strong></li>
+        <li>Unreachable cells <strong>turn black</strong></li>
+        <li>Click empty cell → <span class="green">painted in your color</span></li>
+      </ul>
+
+      <h3>⚔️ Attack Mechanics</h3>
+      <p>You can also attack <strong>enemy regions</strong> adjacent to yours:</p>
+      <ul>
+        <li>1 attack on enemy region → <strong>becomes neutral</strong> (empty)</li>
+        <li>To claim it, you need to <strong>click again</strong></li>
+        <li>Attack on enemy castle → <span class="red">-1 HP</span></li>
+      </ul>
+
+      <h3>🏆 Victory</h3>
+      <p>If you destroy the enemy castle with <strong>3 attacks</strong> (HP reaches 0) while your own castle is still alive, <strong>you win the game</strong>!</p>
+
+      <h3>💡 Tips</h3>
+      <ul>
+        <li>Some numbers have only one decomposition, others have many. Larger numbers usually have more.</li>
+        <li>Numbers that are <strong>multiples of 6</strong> (12, 18, 24...) usually have more decompositions.</li>
+        <li>Save up points for big packages or take small steps toward the castle — the strategy is yours!</li>
+        <li>If the opponent gets close, consider buying regions for defense.</li>
+      </ul>
+    `,
+    conjectureContent: `
+      <h3>📜 Who Proposed It?</h3>
+      <p>The Goldbach Conjecture was proposed in <strong>1742</strong> by Prussian mathematician <strong>Christian Goldbach</strong>. Goldbach mentioned this idea in a letter to one of the greatest mathematicians of his time, <strong>Leonhard Euler</strong>.</p>
+
+      <h3>🤔 What Is It?</h3>
+      <div class="fact-box">
+        <strong>"Every even number greater than 4 can be written as the sum of two prime numbers."</strong>
+      </div>
+      <p>That is, take <em>any even number</em> in your head (say 100), and you can find <strong>two prime numbers</strong> that sum to it.</p>
+
+      <h3>🔢 Examples</h3>
+      <div class="example">
+        4 = 2 + 2<br>
+        6 = 3 + 3<br>
+        10 = 3 + 7 = 5 + 5<br>
+        20 = 3 + 17 = 7 + 13<br>
+        30 = 7 + 23 = 11 + 19 = 13 + 17<br>
+        100 = 3 + 97 = 11 + 89 = 17 + 83 = 29 + 71 = 41 + 59 = 47 + 53<br>
+        1000 = 3 + 997 = 17 + 983 = ... (28 different ways!)
+      </div>
+      <p>As you see, larger numbers usually have more "Goldbach pairs".</p>
+
+      <h3>❓ What Is a Prime Number?</h3>
+      <p>A <strong>prime number</strong> is a natural number greater than 1 that is divisible only by <strong>1</strong> and <strong>itself</strong>.</p>
+      <p>The first primes: <code>2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97...</code></p>
+      <p><strong>Important:</strong> 1 is <strong>not</strong> prime. 2 is the only even prime.</p>
+
+      <h3>🧐 Why Is It So Interesting?</h3>
+      <p>The Goldbach Conjecture is a mathematical claim that's incredibly simple to state but unbelievably hard to prove. So far:</p>
+      <ul>
+        <li>Computers have tested all even numbers up to <strong>4 × 10¹⁸</strong> (4 quintillion!) and they all confirm the conjecture.</li>
+        <li>That is, <strong>not a single counterexample</strong> has been found.</li>
+        <li>But mathematicians have been unable to prove it for <strong>all</strong> even numbers in 280 years.</li>
+      </ul>
+
+      <div class="fact-box">
+        💰 <strong>Fun fact:</strong> In 2000, a publisher offered a <strong>$1 million prize</strong> to anyone who could prove the Goldbach Conjecture. No one has claimed it yet!
+      </div>
+
+      <h3>🌍 Why Does It Matter?</h3>
+      <p>The Goldbach Conjecture is one of the most famous open problems in number theory. Such problems:</p>
+      <ul>
+        <li>Help us understand the mysterious distribution of primes</li>
+        <li>Modern <strong>cryptography</strong> (e.g., WhatsApp encryption, online banking) relies on prime numbers</li>
+        <li>Drive the development of new mathematical tools</li>
+      </ul>
+
+      <h3>📊 Goldbach's Comet</h3>
+      <p>If you graph the number of Goldbach decompositions for each even number, you get a beautiful pattern called <strong>"Goldbach's Comet"</strong>. Some lines are thicker than others — especially numbers that are <strong>multiples of 6</strong> have more decompositions.</p>
+
+      <h3>🎮 What Are We Doing in This Game?</h3>
+      <p>In this game, each turn you get a random even number and you try to find its Goldbach decompositions. So you are actually <strong>testing a 280-year-old famous math problem with your own eyes</strong>!</p>
+    `
+  }
+};
+
+function t(key, params) {
+  let str = LANG[currentLang][key] || LANG['tr'][key] || key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      str = str.replaceAll('{' + k + '}', v);
+    }
+  }
+  return str;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById('lang-tr').classList.toggle('active', lang === 'tr');
+  document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+  applyLang();
+}
+
+function toggleLang() {
+  setLang(currentLang === 'tr' ? 'en' : 'tr');
+}
+
+function applyLang() {
+  const L = LANG[currentLang];
+  document.getElementById('setup-title').textContent = L.setupTitle;
+  document.getElementById('step1-desc').textContent = L.step1Desc;
+  document.getElementById('step2-desc').textContent = L.step2Desc;
+  document.getElementById('size-edge-label').textContent = L.edgeFullLabel;
+  document.getElementById('range-label').textContent = L.rangeLabel;
+  document.getElementById('start-btn').textContent = L.startBtn;
+  document.querySelectorAll('.lbl-next').forEach(el => el.textContent = L.next);
+  document.querySelectorAll('.lbl-back').forEach(el => el.textContent = L.back);
+  if (typeof updateSizePreview === 'function') updateSizePreview();
+  // If step 2 is visible, refresh its info text in the new language
+  const step2 = document.getElementById('setup-step-2');
+  if (step2 && step2.style.display !== 'none' && typeof refreshStep2 === 'function') {
+    refreshStep2();
+  }
+  // Refresh info modal if open
+  if (typeof _modalOpenType !== 'undefined' && _modalOpenType) {
+    openInfoModal(_modalOpenType);
+  }
+  document.getElementById('header-title').textContent = L.title;
+  document.getElementById('header-subtitle').textContent = L.subtitle;
+  document.getElementById('lang-toggle').textContent = currentLang === 'tr' ? 'EN' : 'TR';
+  document.getElementById('p1-name').textContent = L.p1Name;
+  document.getElementById('p2-name').textContent = L.p2Name;
+  document.querySelectorAll('.lbl-power').forEach(el => el.textContent = L.power);
+  document.querySelectorAll('.lbl-score').forEach(el => el.textContent = L.score);
+  document.querySelectorAll('.lbl-territory').forEach(el => el.textContent = L.territory);
+
+  document.querySelectorAll('.lbl-history').forEach(el => el.textContent = L.history);
+  document.querySelectorAll('.lbl-your-turn').forEach(el => el.textContent = L.yourTurn);
+  document.querySelectorAll('.lbl-pick').forEach(el => el.textContent = L.pick);
+  document.querySelectorAll('.lbl-send').forEach(el => el.textContent = L.send);
+  document.querySelectorAll('.lbl-restart').forEach(el => el.textContent = L.restart);
+  document.querySelectorAll('.lbl-skip').forEach(el => el.textContent = L.skip);
+  document.querySelectorAll('.lbl-done').forEach(el => el.textContent = L.done);
+  document.querySelectorAll('.lbl-reset').forEach(el => el.textContent = L.reset);
+  document.querySelectorAll('.lbl-howto').forEach(el => el.textContent = L.howto);
+  document.querySelectorAll('.lbl-conjecture').forEach(el => el.textContent = L.conjecture);
+  if (document.getElementById('market-title')) {
+    document.getElementById('market-title').textContent = currentLang === 'tr' ? 'MARKET' : 'MARKET';
+  }
+  document.getElementById('go-title').textContent = L.winner;
+  document.getElementById('goldbach-fact').textContent = L.fact;
+  if (state.phase === 'WAITING') {
+    document.getElementById('target-display').textContent = L.pickStart;
+  }
+  if (state.rangeMin && state.rangeMax) {
+    document.getElementById('range-display').textContent = t('rangeDisplay', { min: state.rangeMin, max: state.rangeMax });
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  MATH UTILITIES
+// ═══════════════════════════════════════════════════════
+
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n < 4) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) return false;
+  }
+  return true;
+}
+
+function smallestFactor(n) {
+  if (n < 2) return n;
+  if (n % 2 === 0) return 2;
+  if (n % 3 === 0) return 3;
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0) return i;
+    if (n % (i + 2) === 0) return i + 2;
+  }
+  return n;
+}
+
+function factorString(n) {
+  const f = smallestFactor(n);
+  return f === n ? '' : `${f} × ${n / f}`;
+}
+
+function goldbachDecompositions(n) {
+  const results = [];
+  if (n < 4 || n % 2 !== 0) return results;
+  for (let i = 2; i <= n / 2; i++) {
+    if (isPrime(i) && isPrime(n - i)) {
+      results.push([i, n - i]);
+    }
+  }
+  return results;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STARS BACKGROUND
+// ═══════════════════════════════════════════════════════
+
+const starsCanvas = document.getElementById('stars-canvas');
+const starsCtx = starsCanvas.getContext('2d');
+let stars = [];
+
+function initStars() {
+  starsCanvas.width = window.innerWidth;
+  starsCanvas.height = window.innerHeight;
+  stars = [];
+  for (let i = 0; i < 120; i++) {
+    stars.push({
+      x: Math.random() * starsCanvas.width,
+      y: Math.random() * starsCanvas.height,
+      r: Math.random() * 1.5 + 0.3,
+      speed: Math.random() * 0.3 + 0.05,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+function drawStars(time) {
+  starsCtx.clearRect(0, 0, starsCanvas.width, starsCanvas.height);
+  stars.forEach(s => {
+    const brightness = 0.4 + 0.6 * Math.sin(time * 0.001 + s.phase);
+    starsCtx.beginPath();
+    starsCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    starsCtx.fillStyle = `rgba(200,210,255,${brightness * 0.8})`;
+    starsCtx.fill();
+    s.y += s.speed;
+    if (s.y > starsCanvas.height) { s.y = 0; s.x = Math.random() * starsCanvas.width; }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  HEX BOARD
+// ═══════════════════════════════════════════════════════
+
+const boardCanvas = document.getElementById('board-canvas');
+const boardCtx = boardCanvas.getContext('2d');
+let HEX_RADIUS = 28;
+let RINGS = 4;
+const CASTLE_HP = 3;
+const PRICES = [
+  { count: 1, cost: 10 },
+  { count: 2, cost: 20 },
+  { count: 5, cost: 50 }
+];
+const NEIGHBOR_OFFSETS = [
+  [+1, 0], [-1, 0], [0, +1], [0, -1], [+1, -1], [-1, +1]
+];
+
+// Board size: edge cells = RINGS + 1 (hexagonal grid edge length)
+const MIN_EDGE = 3; // RINGS=2 (smallest playable)
+const MAX_EDGE = 7; // RINGS=6 (largest)
+let edgeCells = 5;  // default: RINGS=4
+
+function getRingsForEdge(edge) { return edge - 1; }
+function getCellCountForRings(r) { return 1 + 3 * r * (r + 1); }
+function getHexRadiusForRings(r) {
+  // Pre-tuned to fit ~720x500 board area
+  const map = { 2: 44, 3: 36, 4: 28, 5: 23, 6: 19 };
+  return map[r] || 28;
+}
+function getMinRangeForRings(r) {
+  const map = { 2: 30, 3: 40, 4: 70, 5: 110, 6: 160 };
+  return map[r] || 70;
+}
+function getDefaultRangeForRings(r) {
+  const map = { 2: 30, 3: 50, 4: 100, 5: 200, 6: 300 };
+  return map[r] || 100;
+}
+let hexCells = [];
+let cellMap = new Map();
+let castles = { left: null, right: null };
+let hoveredCell = null;
+let boardCenterX, boardCenterY;
+
+function initBoard() {
+  const area = document.getElementById('board-area');
+  boardCanvas.width = area.clientWidth;
+  boardCanvas.height = area.clientHeight;
+  boardCenterX = boardCanvas.width / 2;
+  boardCenterY = boardCanvas.height / 2;
+  hexCells = [];
+  cellMap = new Map();
+  for (let q = -RINGS; q <= RINGS; q++) {
+    for (let r = -RINGS; r <= RINGS; r++) {
+      if (Math.abs(-q - r) <= RINGS) {
+        const cell = {
+          q, r,
+          x: boardCenterX + HEX_RADIUS * 1.75 * q,
+          y: boardCenterY + HEX_RADIUS * (Math.sqrt(3) * (r + q / 2)),
+          owner: 0,
+          isCastle: false,
+          hp: 0
+        };
+        hexCells.push(cell);
+        cellMap.set(`${q},${r}`, cell);
+      }
+    }
+  }
+
+  // Place castles: middle of leftmost/rightmost column
+  // For q=-RINGS, valid r ∈ [0, RINGS], middle = floor(RINGS/2)
+  // For q=+RINGS, valid r ∈ [-RINGS, 0], middle = -floor(RINGS/2)
+  const midR = Math.floor(RINGS / 2);
+  const leftCastle = cellMap.get(`${-RINGS},${midR}`);
+  const rightCastle = cellMap.get(`${RINGS},${-midR}`);
+  if (leftCastle) {
+    leftCastle.owner = 1;
+    leftCastle.isCastle = true;
+    leftCastle.hp = CASTLE_HP;
+    castles.left = leftCastle;
+  }
+  if (rightCastle) {
+    rightCastle.owner = 2;
+    rightCastle.isCastle = true;
+    rightCastle.hp = CASTLE_HP;
+    castles.right = rightCastle;
+  }
+}
+
+function getNeighbors(cell) {
+  const result = [];
+  for (const [dq, dr] of NEIGHBOR_OFFSETS) {
+    const n = cellMap.get(`${cell.q + dq},${cell.r + dr}`);
+    if (n) result.push(n);
+  }
+  return result;
+}
+
+function getReachableCells(player) {
+  const reachable = new Set();
+  hexCells.forEach(c => {
+    if (c.owner === player) {
+      getNeighbors(c).forEach(n => {
+        if (n.owner !== player) reachable.add(n);
+      });
+    }
+  });
+  return reachable;
+}
+
+function getCellAtPixel(px, py) {
+  let closest = null;
+  let minDist = Infinity;
+  hexCells.forEach(c => {
+    const d = Math.hypot(c.x - px, c.y - py);
+    if (d < HEX_RADIUS && d < minDist) {
+      minDist = d;
+      closest = c;
+    }
+  });
+  return closest;
+}
+
+function drawHexShape(ctx, cx, cy, radius) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 180) * (60 * i - 30);
+    const px = cx + radius * Math.cos(a);
+    const py = cy + radius * Math.sin(a);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+}
+
+function drawCastleIcon(ctx, cx, cy, color, lightColor) {
+  // Castle body — three towers
+  const bw = 8, bh = 12;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = lightColor;
+  ctx.lineWidth = 1;
+  // Base
+  ctx.fillRect(cx - 12, cy - 2, 24, 8);
+  ctx.strokeRect(cx - 12, cy - 2, 24, 8);
+  // Left tower
+  ctx.fillRect(cx - 12, cy - bh, bw, bh + 2);
+  ctx.strokeRect(cx - 12, cy - bh, bw, bh + 2);
+  // Right tower
+  ctx.fillRect(cx + 4, cy - bh, bw, bh + 2);
+  ctx.strokeRect(cx + 4, cy - bh, bw, bh + 2);
+  // Center tower (taller)
+  ctx.fillRect(cx - 5, cy - bh - 4, 10, bh + 6);
+  ctx.strokeRect(cx - 5, cy - bh - 4, 10, bh + 6);
+  // Battlements (top notches)
+  ctx.fillStyle = lightColor;
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(cx - 12 + i * 3, cy - bh - 2, 2, 2);
+    ctx.fillRect(cx + 4 + i * 3, cy - bh - 2, 2, 2);
+  }
+  ctx.fillRect(cx - 4, cy - bh - 6, 2, 2);
+  ctx.fillRect(cx - 1, cy - bh - 6, 2, 2);
+  ctx.fillRect(cx + 2, cy - bh - 6, 2, 2);
+}
+
+function drawBoard(time) {
+  boardCtx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
+
+  const player = state.currentPlayer;
+  const reachable = (state.phase === 'PLACING') ? getReachableCells(player) : new Set();
+  const hoverNeighbors = new Set();
+  if (state.phase === 'PLACING' && hoveredCell && hoveredCell.owner === player) {
+    getNeighbors(hoveredCell).forEach(n => {
+      if (n.owner !== player) hoverNeighbors.add(n);
+    });
+  }
+
+  hexCells.forEach(cell => {
+    let fill, border, lineWidth = 1.5;
+    const pulse = Math.sin(time * 0.003 + cell.q + cell.r) * 15;
+
+    if (cell.owner === 1) {
+      fill = `rgb(${Math.max(0, pulse)},${Math.min(255, 50 + pulse)},${Math.min(255, 130 + pulse)})`;
+      border = '#00b4ff';
+      lineWidth = 2;
+    } else if (cell.owner === 2) {
+      fill = `rgb(${Math.min(255, 130 + pulse)},${Math.min(255, 20 + pulse)},${Math.min(255, 20 + pulse)})`;
+      border = '#ff5050';
+      lineWidth = 2;
+    } else {
+      fill = '#181830';
+      border = '#2a2a50';
+    }
+
+    // PLACING phase: highlight reachable, dim unreachable
+    if (state.phase === 'PLACING') {
+      if (reachable.has(cell)) {
+        if (cell.owner === 0) {
+          // Available to claim — light player color
+          fill = player === 1 ? 'rgba(0, 120, 200, 0.5)' : 'rgba(200, 60, 60, 0.5)';
+          border = player === 1 ? '#66d0ff' : '#ff9090';
+          lineWidth = 2;
+        } else if (cell.owner !== player) {
+          // Enemy adjacent — attackable
+          border = player === 1 ? '#ffaa00' : '#ffaa00';
+          lineWidth = 3;
+        }
+      } else if (cell.owner === 0) {
+        // Unreachable empty cell — blackout
+        fill = '#050510';
+        border = '#1a1a25';
+      } else if (cell.owner !== player) {
+        // Enemy not reachable — dimmed
+        fill = cell.owner === 1 ? 'rgba(0, 50, 100, 0.4)' : 'rgba(100, 20, 20, 0.4)';
+        border = cell.owner === 1 ? '#003366' : '#663030';
+      }
+
+      // Extra hover highlight
+      if (hoverNeighbors.has(cell)) {
+        const glow = Math.sin(time * 0.008) * 0.3 + 0.7;
+        fill = player === 1
+          ? `rgba(0, 180, 255, ${glow})`
+          : `rgba(255, 100, 100, ${glow})`;
+        border = '#ffd700';
+        lineWidth = 3;
+      }
+    }
+
+    drawHexShape(boardCtx, cell.x, cell.y, HEX_RADIUS - 2);
+    boardCtx.fillStyle = fill;
+    boardCtx.fill();
+    boardCtx.strokeStyle = border;
+    boardCtx.lineWidth = lineWidth;
+    boardCtx.stroke();
+
+    // Castle drawing
+    if (cell.isCastle) {
+      const cColor = cell.owner === 1 ? '#003a66' : '#660a0a';
+      const cLight = cell.owner === 1 ? '#66d0ff' : '#ff9090';
+      drawCastleIcon(boardCtx, cell.x, cell.y + 4, cColor, cLight);
+
+      // HP display above
+      const hpY = cell.y - HEX_RADIUS - 6;
+      const heartSize = 4;
+      const totalWidth = CASTLE_HP * (heartSize * 2 + 2);
+      const startX = cell.x - totalWidth / 2 + heartSize;
+      for (let i = 0; i < CASTLE_HP; i++) {
+        const x = startX + i * (heartSize * 2 + 2);
+        boardCtx.beginPath();
+        boardCtx.arc(x, hpY, heartSize, 0, Math.PI * 2);
+        boardCtx.fillStyle = i < cell.hp ? '#ff3060' : '#3a1020';
+        boardCtx.fill();
+        boardCtx.strokeStyle = '#000';
+        boardCtx.lineWidth = 1;
+        boardCtx.stroke();
+      }
+    } else if (!cell.owner && state.phase !== 'PLACING') {
+      boardCtx.beginPath();
+      boardCtx.arc(cell.x, cell.y, 2, 0, Math.PI * 2);
+      boardCtx.fillStyle = '#2a2a50';
+      boardCtx.fill();
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  WARRIOR DRAWING — P1: M symbol, P2: K symbol
+// ═══════════════════════════════════════════════════════
+
+function drawWarrior(canvasId, color, lightColor, darkColor, symbol, time) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 90, 105);
+  const cx = 45, cy = 50;
+  const armSwing = Math.sin(time * 0.003) * 4;
+
+  const grad = ctx.createRadialGradient(cx, cy, 5, cx, cy, 42);
+  grad.addColorStop(0, color + '22');
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 90, 105);
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 28);
+  ctx.lineTo(cx - 16, cy + 4);
+  ctx.lineTo(cx - 12, cy + 22);
+  ctx.lineTo(cx + 12, cy + 22);
+  ctx.lineTo(cx + 16, cy + 4);
+  ctx.closePath();
+  ctx.fillStyle = darkColor;
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy - 14, 13, 0, Math.PI * 2);
+  ctx.fillStyle = darkColor;
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx - 9, cy - 16);
+  ctx.lineTo(cx + 9, cy - 16);
+  ctx.lineTo(cx + 6, cy - 10);
+  ctx.lineTo(cx - 6, cy - 10);
+  ctx.closePath();
+  ctx.fillStyle = lightColor;
+  ctx.fill();
+
+  // Chest symbol
+  ctx.strokeStyle = lightColor;
+  ctx.lineWidth = 1.5;
+  if (symbol === 'M') {
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, cy + 11);
+    ctx.lineTo(cx - 5, cy);
+    ctx.lineTo(cx, cy + 6);
+    ctx.lineTo(cx + 5, cy);
+    ctx.lineTo(cx + 5, cy + 11);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, cy);
+    ctx.lineTo(cx - 5, cy + 11);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, cy + 5);
+    ctx.lineTo(cx + 5, cy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, cy + 5);
+    ctx.lineTo(cx + 5, cy + 11);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(cx - 16, cy + 4); ctx.lineTo(cx - 25, cy + 16 + armSwing); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 16, cy + 4); ctx.lineTo(cx + 25, cy + 16 - armSwing); ctx.stroke();
+
+  const sy = cy + 16 - armSwing;
+  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(cx + 25, sy); ctx.lineTo(cx + 25, sy - 22); ctx.stroke();
+  ctx.strokeStyle = '#b8960a'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(cx + 20, sy); ctx.lineTo(cx + 30, sy); ctx.stroke();
+
+  ctx.strokeStyle = darkColor; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(cx - 7, cy + 22); ctx.lineTo(cx - 9, cy + 38); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 7, cy + 22); ctx.lineTo(cx + 9, cy + 38); ctx.stroke();
+
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(cx - 9, cy + 40, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 9, cy + 40, 4, 0, Math.PI * 2); ctx.fill();
+}
+
+// ═══════════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════════
+
+const WIN_SCORE = 200;
+const TURN_TIME = 30;
+
+const state = {
+  currentPlayer: 1,
+  phase: 'SETUP',
+  rangeMin: 6,
+  rangeMax: 100,
+  players: [
+    null,
+    { score: 0, discoveries: [] },
+    { score: 0, discoveries: [] }
+  ],
+  target: null,
+  allDecomps: [],
+  foundDecomps: [],
+  wrongAttempts: 0,
+  timerLeft: 0,
+  timerInterval: null,
+  turnCount: 0,
+  pickAnimating: false,
+  placementsLeft: 0,
+  _wrongDetails: []
+};
+
+function $(id) { return document.getElementById(id); }
+
+// ═══════════════════════════════════════════════════════
+//  START GAME
+// ═══════════════════════════════════════════════════════
+
+function changeEdge(delta) {
+  edgeCells = Math.max(MIN_EDGE, Math.min(MAX_EDGE, edgeCells + delta));
+  updateSizePreview();
+}
+
+function updateSizePreview() {
+  const r = getRingsForEdge(edgeCells);
+  const cells = getCellCountForRings(r);
+  const minR = getMinRangeForRings(r);
+  $('size-edge-num').textContent = edgeCells;
+  const L = LANG[currentLang];
+  $('size-stats-cells').innerHTML = `${L.totalCells}: <strong>${cells}</strong> ${L.cellsLabel}`;
+  $('size-stats-range').innerHTML = `${L.recommendedMin}: <strong style="color:#ffd700">4 - ${minR}</strong>`;
+  document.querySelectorAll('.size-btn')[0].disabled = edgeCells <= MIN_EDGE;
+  document.querySelectorAll('.size-btn')[1].disabled = edgeCells >= MAX_EDGE;
+  drawBoardPreview(r);
+}
+
+function drawBoardPreview(rings) {
+  const canvas = $('board-preview');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Compute hex radius to fit the canvas
+  const margin = 12;
+  const widthLimit = (w - 2 * margin) / (1.75 * rings * 2 + 2);
+  const heightLimit = (h - 2 * margin) / (Math.sqrt(3) * (rings * 2 + 1));
+  const r = Math.max(4, Math.min(widthLimit, heightLimit));
+  const cx = w / 2;
+  const cy = h / 2;
+  const midR = Math.floor(rings / 2);
+
+  for (let q = -rings; q <= rings; q++) {
+    for (let r2 = -rings; r2 <= rings; r2++) {
+      if (Math.abs(-q - r2) <= rings) {
+        const x = cx + r * 1.75 * q;
+        const y = cy + r * Math.sqrt(3) * (r2 + q / 2);
+        const isLeftCastle = (q === -rings && r2 === midR);
+        const isRightCastle = (q === rings && r2 === -midR);
+
+        let fill = '#181830', border = '#2a2a50';
+        if (isLeftCastle) { fill = '#003366'; border = '#00b4ff'; }
+        if (isRightCastle) { fill = '#660a0a'; border = '#ff5050'; }
+
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const a = (Math.PI / 180) * (60 * i - 30);
+          const px = x + (r - 1) * Math.cos(a);
+          const py = y + (r - 1) * Math.sin(a);
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.strokeStyle = border;
+        ctx.lineWidth = (isLeftCastle || isRightCastle) ? 2 : 1;
+        ctx.stroke();
+
+        // Draw small castle icon
+        if (isLeftCastle || isRightCastle) {
+          const cColor = isLeftCastle ? '#66d0ff' : '#ff9090';
+          ctx.fillStyle = cColor;
+          const tw = Math.max(1, r * 0.18);
+          ctx.fillRect(x - r * 0.5, y - r * 0.15, r, r * 0.3);
+          ctx.fillRect(x - r * 0.5, y - r * 0.5, tw * 1.6, r * 0.55);
+          ctx.fillRect(x + r * 0.5 - tw * 1.6, y - r * 0.5, tw * 1.6, r * 0.55);
+          ctx.fillRect(x - tw, y - r * 0.65, tw * 2, r * 0.7);
+        }
+      }
+    }
+  }
+}
+
+function goToStep1() {
+  $('setup-step-1').style.display = 'block';
+  $('setup-step-2').style.display = 'none';
+  $('step-dot-1').classList.add('active');
+  $('step-dot-2').classList.remove('active');
+  updateSizePreview();
+}
+
+function goToStep2() {
+  $('setup-step-1').style.display = 'none';
+  $('setup-step-2').style.display = 'block';
+  $('step-dot-1').classList.remove('active');
+  $('step-dot-2').classList.add('active');
+  refreshStep2();
+}
+
+function refreshStep2() {
+  const r = getRingsForEdge(edgeCells);
+  const minRange = getMinRangeForRings(r);
+  const defRange = getDefaultRangeForRings(r);
+  const maxInput = $('range-max');
+  // Set min attribute so HTML5 enforces it
+  maxInput.min = minRange;
+  // If current value is below min, raise it to default
+  if (parseInt(maxInput.value) < minRange) {
+    maxInput.value = defRange;
+  }
+
+  const L = LANG[currentLang];
+  $('setup-info-text').innerHTML =
+    `ℹ️ ${L.infoBoardSize} <strong>${edgeCells}</strong> ${L.cellsLabel}/${L.edge} (${getCellCountForRings(r)} ${L.cellsLabel}). ${L.infoMinIs} <strong style="color:#ffd700">4 - ${minRange}</strong>.<br><span style="color:#888">${L.infoLowerWarn}</span>`;
+}
+
+function validateRangeInput() {
+  const r = getRingsForEdge(edgeCells);
+  const minRange = getMinRangeForRings(r);
+  const inp = $('range-max');
+  let val = parseInt(inp.value);
+  if (isNaN(val) || val < minRange) {
+    val = minRange;
+    inp.value = val;
+    inp.style.borderColor = '#ff5050';
+    setTimeout(() => { inp.style.borderColor = ''; }, 800);
+  }
+  if (val % 2 !== 0) {
+    val++;
+    inp.value = val;
+  }
+}
+
+function startGame() {
+  // Apply selected board size
+  RINGS = getRingsForEdge(edgeCells);
+  HEX_RADIUS = getHexRadiusForRings(RINGS);
+  const minRange = getMinRangeForRings(RINGS);
+
+  let min = parseInt($('range-min').value) || 4;
+  let max = parseInt($('range-max').value) || getDefaultRangeForRings(RINGS);
+  if (min % 2 !== 0) min++;
+  if (max % 2 !== 0) max--;
+  if (min < 4) min = 4;
+  // Enforce minimum max based on board size
+  if (max < minRange) max = minRange;
+  if (max < min + 2) max = min + 4;
+  state.rangeMin = min;
+  state.rangeMax = max;
+  state.phase = 'WAITING';
+
+  $('setup-overlay').classList.add('hidden');
+  $('range-display').textContent = t('rangeDisplay', { min, max });
+  $('target-display').textContent = t('pickStart');
+  $('pick-btn').disabled = false;
+
+  initBoard();
+  updatePlayerUI(1);
+  updatePlayerUI(2);
+  setActivePanel();
+  applyLang();
+}
+
+// ═══════════════════════════════════════════════════════
+//  NUMBER PICKING (replaces dice)
+// ═══════════════════════════════════════════════════════
+
+function pickNumber() {
+  if (state.phase !== 'WAITING') return;
+  state.phase = 'ROLLING';
+  $('pick-btn').disabled = true;
+
+  const display = $('pick-display');
+  display.classList.add('animating');
+
+  const evenNumbers = [];
+  for (let n = state.rangeMin; n <= state.rangeMax; n += 2) {
+    if (n >= 4) evenNumbers.push(n);
+  }
+  const finalNum = evenNumbers[Math.floor(Math.random() * evenNumbers.length)];
+
+  let count = 0;
+  const maxCount = 20;
+  const interval = setInterval(() => {
+    count++;
+    display.textContent = evenNumbers[Math.floor(Math.random() * evenNumbers.length)];
+    if (count >= maxCount) {
+      clearInterval(interval);
+      display.classList.remove('animating');
+      display.textContent = finalNum;
+      onNumberPicked(finalNum);
+    }
+  }, 60);
+}
+
+function onNumberPicked(target) {
+  state.target = target;
+  state.allDecomps = goldbachDecompositions(target);
+  state.foundDecomps = [];
+  state.wrongAttempts = 0;
+
+  $('target-display').innerHTML = t('targetMsg', { n: target });
+  $('result-message').textContent = '';
+  $('all-decompositions').textContent = '';
+  clearInputArea();
+
+  $('input-a').disabled = false;
+  $('input-b').disabled = false;
+  $('submit-btn').disabled = false;
+  $('input-a').focus();
+
+  state.phase = 'INPUT';
+  startTimer();
+}
+
+// ═══════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════
+
+function updatePlayerUI(p) {
+  const pl = state.players[p];
+  const pf = p === 1 ? 'p1' : 'p2';
+  $(`${pf}-score`).textContent = pl.score;
+  const territory = hexCells.filter(c => c.owner === p).length;
+  $(`${pf}-territory`).textContent = territory;
+
+  // Show castle HP in power bar
+  const castle = p === 1 ? castles.left : castles.right;
+  const hp = castle ? castle.hp : 0;
+  $(`${pf}-power-text`).textContent = `${'❤'.repeat(hp)}${'♡'.repeat(CASTLE_HP - hp)}`;
+  $(`${pf}-power-fill`).style.width = `${(hp / CASTLE_HP) * 100}%`;
+}
+
+function setActivePanel() {
+  $('panel-p1').classList.toggle('active', state.currentPlayer === 1);
+  $('panel-p2').classList.toggle('active', state.currentPlayer === 2);
+}
+
+function addTurnSummary(player, target, foundDecomps, wrongCount, allDecomps, turnScore) {
+  const pf = player === 1 ? 'p1' : 'p2';
+  const container = $(`${pf}-discoveries`);
+
+  const header = document.createElement('div');
+  header.className = 'discovery-item correct-entry';
+  header.style.fontWeight = '700';
+  header.style.color = '#dda';
+  header.style.borderBottom = 'none';
+  header.style.marginTop = '4px';
+  header.textContent = `▸ ${target}`;
+  container.appendChild(header);
+
+  foundDecomps.forEach(pair => {
+    const div = document.createElement('div');
+    div.className = 'discovery-item correct-entry';
+    div.innerHTML = t('entryCorrect', { t: target, a: pair[0], b: pair[1] });
+    container.appendChild(div);
+  });
+
+  if (wrongCount > 0 && state._wrongDetails) {
+    state._wrongDetails.forEach(w => {
+      const div = document.createElement('div');
+      div.className = 'discovery-item wrong-entry';
+      div.innerHTML = t('entryWrong', { a: w.a, b: w.b });
+      const reason = document.createElement('span');
+      reason.className = 'reason';
+      reason.textContent = w.reason;
+      div.appendChild(reason);
+      container.appendChild(div);
+    });
+  }
+
+  const summary = document.createElement('div');
+  summary.className = 'discovery-item';
+  summary.style.color = '#aa8';
+  summary.innerHTML = t('turnSummary', { f: foundDecomps.length, total: allDecomps.length, s: turnScore });
+  container.appendChild(summary);
+
+  const allLine = document.createElement('div');
+  allLine.className = 'discovery-item';
+  allLine.style.color = '#666';
+  const listStr = allDecomps.map(d => `${d[0]}+${d[1]}`).join(', ');
+  allLine.innerHTML = t('allWere', { list: listStr });
+  container.appendChild(allLine);
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function showScorePopup(text, color, x, y) {
+  const el = document.createElement('div');
+  el.className = 'score-popup';
+  el.textContent = text;
+  el.style.color = color;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
+function clearInputArea() {
+  $('input-a').value = '';
+  $('input-b').value = '';
+  $('input-a').className = 'prime-input';
+  $('input-b').className = 'prime-input';
+  $('input-sum').textContent = '?';
+  $('submitted-answers').innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════════════
+//  TIMER
+// ═══════════════════════════════════════════════════════
+
+function startTimer() {
+  state.timerLeft = TURN_TIME;
+  $('timer-text').textContent = t('seconds', { n: TURN_TIME });
+  $('timer-fill').style.width = '100%';
+
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(() => {
+    state.timerLeft--;
+    $('timer-text').textContent = t('seconds', { n: state.timerLeft });
+    $('timer-fill').style.width = `${(state.timerLeft / TURN_TIME) * 100}%`;
+    if (state.timerLeft <= 5) {
+      $('timer-fill').style.background = 'linear-gradient(90deg, #ff3030, #ff6030)';
+    }
+    if (state.timerLeft <= 0) {
+      clearInterval(state.timerInterval);
+      endTurn();
+    }
+  }, 1000);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SUBMIT ANSWER
+// ═══════════════════════════════════════════════════════
+
+function submitAnswer() {
+  if (state.phase !== 'INPUT') return;
+  const a = parseInt($('input-a').value);
+  const b = parseInt($('input-b').value);
+  if (isNaN(a) || isNaN(b)) return;
+
+  const pair = [Math.min(a, b), Math.max(a, b)];
+
+  if (state.foundDecomps.some(d => d[0] === pair[0] && d[1] === pair[1])) {
+    $('result-message').innerHTML = `<span style="color:#ffa500">${t('alreadyFound')}</span>`;
+    $('input-a').value = '';
+    $('input-b').value = '';
+    $('input-a').focus();
+    return;
+  }
+
+  if (!state._wrongDetails) state._wrongDetails = [];
+
+  const isCorrect = state.allDecomps.some(d => d[0] === pair[0] && d[1] === pair[1]);
+  const answersDiv = $('submitted-answers');
+
+  if (isCorrect) {
+    state.foundDecomps.push(pair);
+    const tag = document.createElement('span');
+    tag.className = 'answer-tag correct';
+    tag.textContent = `${pair[0]} + ${pair[1]} ✓`;
+    answersDiv.appendChild(tag);
+    $('input-a').className = 'prime-input correct';
+    $('input-b').className = 'prime-input correct';
+    const rect = $('submit-btn').getBoundingClientRect();
+    showScorePopup('+10', '#00dd66', rect.left, rect.top - 20);
+    $('result-message').innerHTML = `<span style="color:#00dd66">${t('correct', { a: pair[0], b: pair[1], t: state.target })}</span>`;
+
+    if (state.foundDecomps.length === state.allDecomps.length) {
+      setTimeout(() => endTurn(), 800);
+      return;
+    }
+  } else {
+    state.wrongAttempts++;
+    const tag = document.createElement('span');
+    tag.className = 'answer-tag wrong';
+    tag.textContent = `${a} + ${b} ✗`;
+    answersDiv.appendChild(tag);
+    $('input-a').className = 'prime-input wrong';
+    $('input-b').className = 'prime-input wrong';
+
+    let reason = '';
+    if (!isPrime(a) && !isPrime(b)) {
+      reason = t('wrongNotPrimeBoth', { a, b });
+    } else if (!isPrime(a)) {
+      reason = t('wrongNotPrimeA', { a, f: factorString(a) || a });
+    } else if (!isPrime(b)) {
+      reason = t('wrongNotPrimeB', { b, f: factorString(b) || b });
+    } else if (a + b !== state.target) {
+      reason = t('wrongSum', { a, b, s: a + b, t: state.target });
+    }
+
+    state._wrongDetails.push({ a, b, reason });
+
+    $('result-message').innerHTML = `<span style="color:#ff3030">${t('wrong', { reason })}</span>`;
+    const rect = $('submit-btn').getBoundingClientRect();
+    showScorePopup('-5', '#ff3030', rect.left, rect.top - 20);
+  }
+
+  setTimeout(() => {
+    $('input-a').value = '';
+    $('input-b').value = '';
+    $('input-a').className = 'prime-input';
+    $('input-b').className = 'prime-input';
+    $('input-a').focus();
+  }, 400);
+}
+
+// ═══════════════════════════════════════════════════════
+//  END TURN
+// ═══════════════════════════════════════════════════════
+
+function endTurn() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.phase = 'RESULT';
+
+  $('input-a').disabled = true;
+  $('input-b').disabled = true;
+  $('submit-btn').disabled = true;
+
+  const pl = state.players[state.currentPlayer];
+  const found = state.foundDecomps.length;
+  const total = state.allDecomps.length;
+  const wrong = state.wrongAttempts;
+
+  let turnScore = found * 10;
+  if (found === total && total > 0) turnScore += 15;
+  else if (total > 0 && found >= total / 2) turnScore += 5;
+  turnScore -= wrong * 5;
+  turnScore = Math.max(0, turnScore);
+
+  pl.score += turnScore;
+  updatePlayerUI(state.currentPlayer);
+
+  addTurnSummary(state.currentPlayer, state.target, state.foundDecomps, wrong, state.allDecomps, turnScore);
+
+  const allStr = state.allDecomps.map(d => `${d[0]}+${d[1]}`).join(', ');
+  $('all-decompositions').innerHTML =
+    `<strong>${t('allDecomps', { n: total })}</strong> ${allStr}<br>` +
+    `${t('found')}: ${found}/${total} | ${t('wrongCount')}: ${wrong} | <span style="color:#ffd700">+${turnScore} ${currentLang === 'tr' ? 'puan' : 'pts'}</span>`;
+
+  let msg = '';
+  if (found === total && total > 0) {
+    msg = `<span style="color:#ffd700">${t('perfect', { s: turnScore })}</span>`;
+  } else if (found > 0) {
+    msg = `<span style="color:#00dd66">${t('partial', { f: found, t: total, s: turnScore })}</span>`;
+  } else {
+    msg = `<span style="color:#ff5050">${t('none')}</span>`;
+  }
+  $('result-message').innerHTML = msg;
+
+  setTimeout(() => openMarket(state.currentPlayer), 1800);
+}
+
+function nextTurn() {
+  state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+  state.phase = 'WAITING';
+  state.turnCount++;
+  state._wrongDetails = [];
+  hoveredCell = null;
+  setActivePanel();
+  $('pick-btn').disabled = false;
+  $('pick-display').textContent = '?';
+  $('target-display').textContent = t('pickStart');
+  $('timer-text').textContent = '';
+  $('timer-fill').style.width = '100%';
+  $('timer-fill').style.background = 'linear-gradient(90deg, #ff3030, #ffd700, #00dd66)';
+  clearInputArea();
+  $('result-message').textContent = '';
+  $('all-decompositions').textContent = '';
+  $('placing-banner').classList.remove('visible');
+  $('board-canvas').classList.remove('placing');
+}
+
+// ═══════════════════════════════════════════════════════
+//  MARKET
+// ═══════════════════════════════════════════════════════
+
+function openMarket(player) {
+  state.phase = 'MARKET';
+  const pl = state.players[player];
+  const colorName = player === 1 ? t('blue') : t('red');
+  const color = player === 1 ? '#00b4ff' : '#ff5050';
+
+  // Draw mini knight in market
+  const ctx = document.getElementById('market-warrior').getContext('2d');
+  ctx.clearRect(0, 0, 80, 95);
+  drawMarketKnight(ctx, player);
+
+  $('market-msg').innerHTML = t('marketMsg', {
+    color: `<span class="player-color" style="color:${color}">${colorName}</span>`,
+    points: `<span class="points">${pl.score}</span>`
+  });
+
+  // Build options
+  const optionsDiv = $('market-options');
+  optionsDiv.innerHTML = '';
+  const affordable = PRICES.filter(p => pl.score >= p.cost);
+
+  if (affordable.length === 0) {
+    optionsDiv.innerHTML = `<div style="color:#ff8080;font-size:0.95rem;padding:10px">${t('noAfford')}</div>`;
+    setTimeout(() => {
+      $('market-overlay').classList.remove('visible');
+      nextTurn();
+    }, 2200);
+  }
+
+  PRICES.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'market-option';
+    if (pl.score < p.cost) div.classList.add('disabled');
+    div.innerHTML = `
+      <div class="pkg-info">
+        <span class="pkg-icon">⬢</span>
+        <span>${p.count} ${t('region')}${p.count > 1 ? t('regionPlural') : ''}</span>
+      </div>
+      <span class="pkg-cost">${p.cost} ${t('points')}</span>
+    `;
+    if (pl.score >= p.cost) {
+      div.onclick = () => buyTerritories(p.count, p.cost);
+    }
+    optionsDiv.appendChild(div);
+  });
+
+  $('market-overlay').classList.add('visible');
+}
+
+function drawMarketKnight(ctx, player) {
+  const color = player === 1 ? '#00b4ff' : '#ff5050';
+  const lightColor = player === 1 ? '#66d0ff' : '#ff9090';
+  const darkColor = player === 1 ? '#005599' : '#992020';
+  const symbol = player === 1 ? 'M' : 'K';
+  const time = performance.now();
+  const cx = 40, cy = 45;
+  const armSwing = Math.sin(time * 0.003) * 4;
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 28);
+  ctx.lineTo(cx - 16, cy + 4);
+  ctx.lineTo(cx - 12, cy + 22);
+  ctx.lineTo(cx + 12, cy + 22);
+  ctx.lineTo(cx + 16, cy + 4);
+  ctx.closePath();
+  ctx.fillStyle = darkColor;
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy - 14, 13, 0, Math.PI * 2);
+  ctx.fillStyle = darkColor;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx - 9, cy - 16);
+  ctx.lineTo(cx + 9, cy - 16);
+  ctx.lineTo(cx + 6, cy - 10);
+  ctx.lineTo(cx - 6, cy - 10);
+  ctx.closePath();
+  ctx.fillStyle = lightColor;
+  ctx.fill();
+
+  ctx.strokeStyle = lightColor;
+  ctx.lineWidth = 1.5;
+  if (symbol === 'M') {
+    ctx.beginPath();
+    ctx.moveTo(cx - 5, cy + 11); ctx.lineTo(cx - 5, cy);
+    ctx.lineTo(cx, cy + 6); ctx.lineTo(cx + 5, cy);
+    ctx.lineTo(cx + 5, cy + 11);
+    ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.moveTo(cx - 5, cy); ctx.lineTo(cx - 5, cy + 11); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 5, cy + 5); ctx.lineTo(cx + 5, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 5, cy + 5); ctx.lineTo(cx + 5, cy + 11); ctx.stroke();
+  }
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(cx - 16, cy + 4); ctx.lineTo(cx - 25, cy + 16 + armSwing); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 16, cy + 4); ctx.lineTo(cx + 25, cy + 16 - armSwing); ctx.stroke();
+
+  ctx.strokeStyle = darkColor; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(cx - 7, cy + 22); ctx.lineTo(cx - 9, cy + 38); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + 7, cy + 22); ctx.lineTo(cx + 9, cy + 38); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(cx - 9, cy + 40, 4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + 9, cy + 40, 4, 0, Math.PI * 2); ctx.fill();
+}
+
+function buyTerritories(count, cost) {
+  const player = state.currentPlayer;
+  const pl = state.players[player];
+  pl.score -= cost;
+  updatePlayerUI(player);
+  state.placementsLeft = count;
+  $('market-overlay').classList.remove('visible');
+  startPlacing();
+}
+
+function skipMarket() {
+  $('market-overlay').classList.remove('visible');
+  nextTurn();
+}
+
+// ═══════════════════════════════════════════════════════
+//  PLACING PHASE
+// ═══════════════════════════════════════════════════════
+
+function startPlacing() {
+  state.phase = 'PLACING';
+  $('board-canvas').classList.add('placing');
+  $('placing-banner').classList.add('visible');
+  updatePlacingBanner();
+}
+
+function updatePlacingBanner() {
+  $('placing-text').textContent = t('placingMsg', { n: state.placementsLeft });
+}
+
+function endPlacing() {
+  state.phase = 'WAITING';
+  $('placing-banner').classList.remove('visible');
+  $('board-canvas').classList.remove('placing');
+  state.placementsLeft = 0;
+  hoveredCell = null;
+  if (checkCastleWin()) return;
+  nextTurn();
+}
+
+function handleBoardClick(e) {
+  if (state.phase !== 'PLACING' || state.placementsLeft <= 0) return;
+  const rect = boardCanvas.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  const cell = getCellAtPixel(px, py);
+  if (!cell) return;
+
+  const player = state.currentPlayer;
+  const reachable = getReachableCells(player);
+  if (!reachable.has(cell)) return;
+
+  // Already mine? skip
+  if (cell.owner === player) return;
+
+  if (cell.owner === 0) {
+    // Claim empty cell
+    cell.owner = player;
+    state.placementsLeft--;
+  } else {
+    // Enemy cell — attack
+    if (cell.isCastle) {
+      cell.hp--;
+      state.placementsLeft--;
+      if (cell.hp <= 0) {
+        // Castle destroyed — game over
+        $('placing-banner').classList.remove('visible');
+        $('board-canvas').classList.remove('placing');
+        setTimeout(() => checkCastleWin(), 600);
+        return;
+      }
+    } else {
+      // Regular enemy cell — neutralize
+      cell.owner = 0;
+      state.placementsLeft--;
+    }
+  }
+
+  if (state.placementsLeft <= 0) {
+    endPlacing();
+  } else {
+    updatePlacingBanner();
+  }
+}
+
+function handleBoardMouseMove(e) {
+  if (state.phase !== 'PLACING') {
+    hoveredCell = null;
+    return;
+  }
+  const rect = boardCanvas.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  hoveredCell = getCellAtPixel(px, py);
+}
+
+function handleBoardMouseLeave() {
+  hoveredCell = null;
+}
+
+boardCanvas.addEventListener('click', handleBoardClick);
+boardCanvas.addEventListener('mousemove', handleBoardMouseMove);
+boardCanvas.addEventListener('mouseleave', handleBoardMouseLeave);
+
+// ═══════════════════════════════════════════════════════
+//  GAME OVER
+// ═══════════════════════════════════════════════════════
+
+function checkCastleWin() {
+  if (castles.left && castles.left.hp <= 0) {
+    gameOver(2);
+    return true;
+  }
+  if (castles.right && castles.right.hp <= 0) {
+    gameOver(1);
+    return true;
+  }
+  return false;
+}
+
+function gameOver(winner) {
+  state.phase = 'GAME_OVER';
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  $('market-overlay').classList.remove('visible');
+  $('placing-banner').classList.remove('visible');
+
+  const pl = state.players[winner];
+  const name = winner === 1 ? t('p1Name') : t('p2Name');
+  const color = winner === 1 ? '#00b4ff' : '#ff5050';
+
+  // Count player territories
+  const territory = hexCells.filter(c => c.owner === winner).length;
+
+  $('winner-name').textContent = name;
+  $('winner-name').style.color = color;
+  $('winner-stats').innerHTML =
+    `${t('score')}: ${pl.score}<br>` +
+    `${t('fetchedTerritory')}: ${territory}<br>` +
+    `${t('totalTurns')}: ${state.turnCount + 1}`;
+
+  $('game-over').classList.add('visible');
+}
+
+// ═══════════════════════════════════════════════════════
+//  INFO MODAL (How to Play / Conjecture)
+// ═══════════════════════════════════════════════════════
+
+let _modalOpenType = null;
+
+function openInfoModal(type) {
+  _modalOpenType = type;
+  const L = LANG[currentLang];
+  const titleKey = type === 'howto' ? 'howtoTitle' : 'conjectureTitle';
+  const contentKey = type === 'howto' ? 'howtoContent' : 'conjectureContent';
+  $('info-modal-title').textContent = L[titleKey];
+  $('info-modal-content').innerHTML = L[contentKey];
+  $('info-modal-overlay').classList.add('visible');
+  $('info-modal-box') && $('info-modal-box').scrollTo && $('info-modal-box').scrollTo(0, 0);
+}
+
+function closeInfoModal() {
+  $('info-modal-overlay').classList.remove('visible');
+  _modalOpenType = null;
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && _modalOpenType) {
+    closeInfoModal();
+  }
+});
+
+function resetGame(skipConfirm) {
+  if (!skipConfirm && state.phase !== 'GAME_OVER' && state.phase !== 'SETUP') {
+    if (!confirm(t('resetConfirm'))) return;
+  }
+  state.currentPlayer = 1;
+  state.phase = 'SETUP';
+  state.players[1] = { score: 0, discoveries: [] };
+  state.players[2] = { score: 0, discoveries: [] };
+  state.target = null;
+  state.turnCount = 0;
+  state._wrongDetails = [];
+  state.placementsLeft = 0;
+  hoveredCell = null;
+  if (state.timerInterval) clearInterval(state.timerInterval);
+
+  $('game-over').classList.remove('visible');
+  $('market-overlay').classList.remove('visible');
+  $('placing-banner').classList.remove('visible');
+  $('board-canvas').classList.remove('placing');
+  $('setup-overlay').classList.remove('hidden');
+  goToStep1();
+  $('p1-discoveries').innerHTML = `<div class="title lbl-history">${t('history')}</div>`;
+  $('p2-discoveries').innerHTML = `<div class="title lbl-history">${t('history')}</div>`;
+
+  initBoard();
+  updatePlayerUI(1);
+  updatePlayerUI(2);
+  setActivePanel();
+
+  $('pick-btn').disabled = false;
+  $('pick-display').textContent = '?';
+  $('target-display').textContent = t('pickStart');
+  $('timer-text').textContent = '';
+  $('timer-fill').style.width = '100%';
+  $('timer-fill').style.background = 'linear-gradient(90deg, #ff3030, #ffd700, #00dd66)';
+  $('result-message').textContent = '';
+  $('all-decompositions').textContent = '';
+  clearInputArea();
+}
+
+$('restart-btn').addEventListener('click', () => resetGame(true));
+
+// ═══════════════════════════════════════════════════════
+//  INPUT HANDLING
+// ═══════════════════════════════════════════════════════
+
+function updateInputSum() {
+  const a = parseInt($('input-a').value) || 0;
+  const b = parseInt($('input-b').value) || 0;
+  $('input-sum').textContent = (a || b) ? (a + b) : '?';
+  $('input-sum').style.color = (a + b === state.target) ? '#00dd66' : '#ffd700';
+}
+
+$('input-a').addEventListener('input', updateInputSum);
+$('input-b').addEventListener('input', updateInputSum);
+$('input-a').addEventListener('keydown', e => { if (e.key === 'Enter') $('input-b').focus(); });
+$('input-b').addEventListener('keydown', e => { if (e.key === 'Enter') submitAnswer(); });
+$('submit-btn').addEventListener('click', submitAnswer);
+
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' && state.phase === 'WAITING') {
+    e.preventDefault();
+    pickNumber();
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  MAIN LOOP
+// ═══════════════════════════════════════════════════════
+
+function gameLoop(time) {
+  drawStars(time);
+  drawBoard(time);
+  drawWarrior('warrior1-canvas', '#00b4ff', '#66d0ff', '#005599', 'M', time);
+  drawWarrior('warrior2-canvas', '#ff5050', '#ff9090', '#992020', 'K', time);
+  requestAnimationFrame(gameLoop);
+}
+
+window.addEventListener('resize', () => { initStars(); initBoard(); });
+
+// Range input validation
+$('range-max').addEventListener('blur', validateRangeInput);
+$('range-max').addEventListener('change', validateRangeInput);
+
+initStars();
+initBoard();
+applyLang();
+updateSizePreview();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
