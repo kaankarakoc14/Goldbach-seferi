@@ -18,26 +18,48 @@
     user-select: none;
   }
 
-  .logo-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 45;
+  #header {
     display: flex;
-    justify-content: center;
     align-items: center;
-    padding: 8px 16px;
-    background: rgba(10, 10, 26, 0.95);
-    border-bottom: 1px solid rgba(255, 215, 0, 0.25);
-    pointer-events: none;
+    justify-content: space-between;
+    gap: 14px;
+    border-bottom: 2px solid #ffd700;
+    background: linear-gradient(180deg, rgba(15,15,30,0.95), rgba(10,10,25,0.9));
+    padding: 0 16px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .logo-container {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .school-logo {
-    max-height: 44px;
+    height: 42px;
     width: auto;
-    max-width: 100%;
-    object-fit: contain;
     display: block;
+    object-fit: contain;
+  }
+
+  .header-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .header-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   #stars-canvas {
@@ -381,7 +403,7 @@
   /* ── Placing Banner ── */
   #placing-banner {
     position: fixed;
-    top: 135px;
+    top: 75px;
     left: 50%;
     transform: translateX(-50%);
     background: linear-gradient(135deg, rgba(60,40,0,0.95), rgba(30,20,0,0.95));
@@ -430,8 +452,7 @@
     z-index: 1;
     display: grid;
     grid-template-rows: 60px 1fr 260px;
-    margin-top: 60px;
-    height: calc(100vh - 60px);
+    height: 100vh;
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
@@ -441,12 +462,32 @@
   #header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 20px;
+    justify-content: space-between;
+    gap: 14px;
     border-bottom: 2px solid #ffd700;
     background: linear-gradient(180deg, rgba(15,15,30,0.95), rgba(10,10,25,0.9));
-    padding: 0 20px;
+    padding: 0 16px;
   }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+  }
+  .header-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .header-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   #header h1 {
     font-family: 'Orbitron', sans-serif;
     font-size: 1.6rem;
@@ -456,20 +497,19 @@
   }
   #header .subtitle {
     font-size: 0.8rem;
-    color: #888;
+    color: #cfcfe6;
     letter-spacing: 1px;
   }
   #lang-toggle, #reset-game-btn, #howto-btn, #conjecture-btn {
     font-family: 'Orbitron', sans-serif;
     font-size: 0.65rem;
     padding: 4px 12px;
-    border: 1px solid #555;
+    border: 1px solid #666;
     background: transparent;
-    color: #888;
+    color: #e0e0f0;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s;
-    margin-left: 8px;
     letter-spacing: 1px;
   }
   #lang-toggle:hover { border-color: #ffd700; color: #ffd700; }
@@ -976,10 +1016,6 @@
 </head>
 <body>
 
-<div class="logo-container">
-  <img src="https://ayseabla.k12.tr/wp-content/uploads/2019/07/banner-logo.jpg" alt="Başkent Üniversitesi Özel Ayşeabla Okulları Logo" class="school-logo">
-</div>
-
 <canvas id="stars-canvas"></canvas>
 
 <!-- ── Setup Popup ── -->
@@ -1077,12 +1113,22 @@
 <div id="game-container">
   <!-- Header -->
   <div id="header">
-    <h1 id="header-title">GOLDBACH SEFERİ</h1>
-    <span class="subtitle" id="header-subtitle">Bilim Projesi • Goldbach Sanısı Keşif Oyunu</span>
-    <button id="howto-btn" onclick="openInfoModal('howto')"><span class="lbl-howto">📖 NASIL OYNANIR</span></button>
-    <button id="conjecture-btn" onclick="openInfoModal('conjecture')"><span class="lbl-conjecture">ℹ️ GOLDBACH SANISI</span></button>
-    <button id="lang-toggle" onclick="toggleLang()">EN</button>
-    <button id="reset-game-btn" onclick="resetGame()" title="Oyunu sıfırla"><span class="lbl-reset">↻ SIFIRLA</span></button>
+    <div class="header-left">
+      <div class="logo-container">
+        <img src="https://ayseabla.k12.tr/wp-content/uploads/2019/07/banner-logo.jpg" alt="Başkent Üniversitesi Özel Ayşeabla Okulları Logo" class="school-logo">
+      </div>
+      <div class="header-text">
+        <h1 id="header-title">GOLDBACH SEFERİ</h1>
+        <span class="subtitle" id="header-subtitle">Bilim Projesi • Goldbach Sanısı Keşif Oyunu</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button id="howto-btn" onclick="openInfoModal('howto')"><span class="lbl-howto">📖 NASIL OYNANIR</span></button>
+      <button id="conjecture-btn" onclick="openInfoModal('conjecture')"><span class="lbl-conjecture">ℹ️ GOLDBACH SANISI</span></button>
+      <button id="lang-toggle" onclick="toggleLang()">EN</button>
+      <button id="reset-game-btn" onclick="resetGame()" title="Oyunu sıfırla"><span class="lbl-reset">↻ SIFIRLA</span></button>
+    </div>
   </div>
 
   <!-- Middle -->
