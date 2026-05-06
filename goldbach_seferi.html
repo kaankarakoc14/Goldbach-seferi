@@ -1926,31 +1926,32 @@ function drawHexShape(ctx, cx, cy, radius) {
 
 function drawCastleIcon(ctx, cx, cy, color, lightColor) {
   // Castle body — three towers
-  const bw = 8, bh = 12;
+  const s = Math.max(0.9, HEX_RADIUS / 24); // scale with cell size
+  const bw = 8 * s, bh = 12 * s;
   ctx.fillStyle = color;
   ctx.strokeStyle = lightColor;
-  ctx.lineWidth = 1;
+  ctx.lineWidth = Math.max(1, 1.2 * s);
   // Base
-  ctx.fillRect(cx - 12, cy - 2, 24, 8);
-  ctx.strokeRect(cx - 12, cy - 2, 24, 8);
+  ctx.fillRect(cx - 12 * s, cy - 2 * s, 24 * s, 8 * s);
+  ctx.strokeRect(cx - 12 * s, cy - 2 * s, 24 * s, 8 * s);
   // Left tower
-  ctx.fillRect(cx - 12, cy - bh, bw, bh + 2);
-  ctx.strokeRect(cx - 12, cy - bh, bw, bh + 2);
+  ctx.fillRect(cx - 12 * s, cy - bh, bw, bh + 2 * s);
+  ctx.strokeRect(cx - 12 * s, cy - bh, bw, bh + 2 * s);
   // Right tower
-  ctx.fillRect(cx + 4, cy - bh, bw, bh + 2);
-  ctx.strokeRect(cx + 4, cy - bh, bw, bh + 2);
+  ctx.fillRect(cx + 4 * s, cy - bh, bw, bh + 2 * s);
+  ctx.strokeRect(cx + 4 * s, cy - bh, bw, bh + 2 * s);
   // Center tower (taller)
-  ctx.fillRect(cx - 5, cy - bh - 4, 10, bh + 6);
-  ctx.strokeRect(cx - 5, cy - bh - 4, 10, bh + 6);
+  ctx.fillRect(cx - 5 * s, cy - bh - 4 * s, 10 * s, bh + 6 * s);
+  ctx.strokeRect(cx - 5 * s, cy - bh - 4 * s, 10 * s, bh + 6 * s);
   // Battlements (top notches)
   ctx.fillStyle = lightColor;
   for (let i = 0; i < 3; i++) {
-    ctx.fillRect(cx - 12 + i * 3, cy - bh - 2, 2, 2);
-    ctx.fillRect(cx + 4 + i * 3, cy - bh - 2, 2, 2);
+    ctx.fillRect(cx - 12 * s + i * 3 * s, cy - bh - 2 * s, 2 * s, 2 * s);
+    ctx.fillRect(cx + 4 * s + i * 3 * s, cy - bh - 2 * s, 2 * s, 2 * s);
   }
-  ctx.fillRect(cx - 4, cy - bh - 6, 2, 2);
-  ctx.fillRect(cx - 1, cy - bh - 6, 2, 2);
-  ctx.fillRect(cx + 2, cy - bh - 6, 2, 2);
+  ctx.fillRect(cx - 4 * s, cy - bh - 6 * s, 2 * s, 2 * s);
+  ctx.fillRect(cx - 1 * s, cy - bh - 6 * s, 2 * s, 2 * s);
+  ctx.fillRect(cx + 2 * s, cy - bh - 6 * s, 2 * s, 2 * s);
 }
 
 function drawBoard(time) {
@@ -2027,11 +2028,11 @@ function drawBoard(time) {
     if (cell.isCastle) {
       const cColor = cell.owner === 1 ? '#003a66' : '#660a0a';
       const cLight = cell.owner === 1 ? '#66d0ff' : '#ff9090';
-      drawCastleIcon(boardCtx, cell.x, cell.y + 4, cColor, cLight);
+      drawCastleIcon(boardCtx, cell.x, cell.y + Math.max(2, HEX_RADIUS * 0.12), cColor, cLight);
 
       // HP display above
       const hpY = cell.y - HEX_RADIUS - 6;
-      const heartSize = 4;
+      const heartSize = Math.max(4, Math.floor(HEX_RADIUS * 0.16));
       const totalWidth = CASTLE_HP * (heartSize * 2 + 2);
       const startX = cell.x - totalWidth / 2 + heartSize;
       for (let i = 0; i < CASTLE_HP; i++) {
