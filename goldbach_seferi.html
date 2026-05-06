@@ -456,8 +456,8 @@
     display: grid;
     grid-template-rows: 64px 1fr 260px;
     height: 100dvh;
-    width: min(1600px, 98vw);
-    max-width: 1600px;
+    width: 100%;
+    max-width: none;
     margin: 0 auto;
   }
 
@@ -627,7 +627,7 @@
   /* ── Middle Area ── */
   #middle {
     display: grid;
-    grid-template-columns: 220px 1fr 220px;
+    grid-template-columns: clamp(200px, 17vw, 280px) 1fr clamp(200px, 17vw, 280px);
     gap: 10px;
     padding: 8px;
     overflow: hidden;
@@ -759,8 +759,9 @@
     align-items: center;
     justify-content: center;
     position: relative;
+    min-width: 0;
   }
-  #board-canvas { border-radius: 12px; }
+  #board-canvas { border-radius: 12px; width: 100%; height: 100%; }
 
   /* ── Bottom Panel ── */
   #bottom {
@@ -1802,6 +1803,22 @@ function getHexRadiusForRings(r) {
   const map = { 2: 44, 3: 36, 4: 28, 5: 23, 6: 19 };
   return map[r] || 28;
 }
+
+function getHexRadiusForArea(rings, areaW, areaH) {
+  // Fit the whole hex grid into the available board area.
+  // Grid extents approx:
+  // width  ≈ HEX_RADIUS * (3.5 * rings + 2)
+  // height ≈ HEX_RADIUS * (2 * sqrt(3) * rings + 2)
+  const pad = 16; // breathing room so outlines/HP text don't clip
+  const w = Math.max(1, areaW - pad);
+  const h = Math.max(1, areaH - pad);
+  const denomW = (3.5 * rings + 2);
+  const denomH = (2 * Math.sqrt(3) * rings + 2);
+  const byW = w / denomW;
+  const byH = h / denomH;
+  const r = Math.floor(Math.min(byW, byH));
+  return Math.max(14, r);
+}
 function getMinRangeForRings(r) {
   const map = { 2: 30, 3: 40, 4: 70, 5: 110, 6: 160 };
   return map[r] || 70;
@@ -1820,6 +1837,7 @@ function initBoard() {
   const area = document.getElementById('board-area');
   boardCanvas.width = area.clientWidth;
   boardCanvas.height = area.clientHeight;
+  HEX_RADIUS = getHexRadiusForArea(RINGS, boardCanvas.width, boardCanvas.height);
   boardCenterX = boardCanvas.width / 2;
   boardCenterY = boardCanvas.height / 2;
   hexCells = [];
@@ -2290,7 +2308,7 @@ function validateRangeInput() {
 function startGame() {
   // Apply selected board size
   RINGS = getRingsForEdge(edgeCells);
-  HEX_RADIUS = getHexRadiusForRings(RINGS);
+  // HEX_RADIUS will be computed from the actual board area in initBoard()
   const minRange = getMinRangeForRings(RINGS);
 
   let min = parseInt($('range-min').value) || 4;
