@@ -193,6 +193,135 @@
   }
   #start-btn:hover { background: linear-gradient(135deg, #5a4a00, #3a2a00); box-shadow: 0 0 25px rgba(255,215,0,0.3); }
 
+  /* ── Mode selection cards ── */
+  .mode-cards {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .mode-card {
+    flex: 1;
+    padding: 18px 12px;
+    background: linear-gradient(135deg, #1a1a35, #0d0d20);
+    border: 2px solid #444;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: center;
+  }
+  .mode-card:hover { border-color: #ffd700; transform: translateY(-2px); }
+  .mode-card.selected {
+    border-color: #ffd700;
+    background: linear-gradient(135deg, #3a2a00, #1a1500);
+    box-shadow: 0 0 22px rgba(255,215,0,0.28);
+  }
+  .mode-icon { font-size: 2rem; margin-bottom: 6px; line-height: 1; }
+  .mode-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #ffd700;
+    letter-spacing: 1px;
+  }
+  .mode-sub {
+    font-size: 0.74rem;
+    color: #999;
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+
+  /* ── Difficulty selection ── */
+  #difficulty-section {
+    margin-bottom: 18px;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease, margin-bottom 0.3s ease;
+  }
+  #difficulty-section.visible {
+    max-height: 240px;
+    opacity: 1;
+  }
+  .difficulty-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    color: #ccc;
+    margin-bottom: 8px;
+    text-align: left;
+    letter-spacing: 1px;
+  }
+  .difficulty-cards {
+    display: flex;
+    gap: 8px;
+  }
+  .diff-card {
+    flex: 1;
+    padding: 12px 6px;
+    background: linear-gradient(135deg, #1a1a35, #0d0d20);
+    border: 2px solid #444;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: center;
+  }
+  .diff-card:hover { transform: scale(1.04); }
+  .diff-card[data-diff="easy"]:hover { border-color: #66dd66; }
+  .diff-card[data-diff="medium"]:hover { border-color: #ffaa00; }
+  .diff-card[data-diff="hard"]:hover { border-color: #ff5050; }
+  .diff-card.selected[data-diff="easy"] {
+    border-color: #66dd66;
+    background: linear-gradient(135deg, #143a14, #0a200a);
+    box-shadow: 0 0 18px rgba(100,220,100,0.3);
+  }
+  .diff-card.selected[data-diff="medium"] {
+    border-color: #ffaa00;
+    background: linear-gradient(135deg, #3a2a00, #1a1500);
+    box-shadow: 0 0 18px rgba(255,170,0,0.3);
+  }
+  .diff-card.selected[data-diff="hard"] {
+    border-color: #ff5050;
+    background: linear-gradient(135deg, #3a1010, #200505);
+    box-shadow: 0 0 18px rgba(255,80,80,0.3);
+  }
+  .diff-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .diff-card[data-diff="easy"] .diff-title { color: #66dd66; }
+  .diff-card[data-diff="medium"] .diff-title { color: #ffaa00; }
+  .diff-card[data-diff="hard"] .diff-title { color: #ff5050; }
+  .diff-sub {
+    font-size: 0.68rem;
+    color: #999;
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+
+  /* AI badge near player 2 */
+  .ai-badge {
+    display: inline-block;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.55rem;
+    padding: 1px 6px;
+    border-radius: 8px;
+    border: 1px solid currentColor;
+    margin-left: 6px;
+    letter-spacing: 1px;
+    vertical-align: middle;
+  }
+  .ai-badge.easy { color: #66dd66; }
+  .ai-badge.medium { color: #ffaa00; }
+  .ai-badge.hard { color: #ff5050; }
+
+  /* Disabled-look continue button */
+  #next-btn-mode.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
   /* Step indicator */
   .step-indicator {
     display: flex;
@@ -299,7 +428,7 @@
     justify-content: center;
     align-items: center;
   }
-  #next-btn, #back-btn {
+  #next-btn, #back-btn, #back-btn-2, #next-btn-mode {
     font-family: 'Orbitron', sans-serif;
     font-size: 0.9rem;
     padding: 10px 24px;
@@ -311,7 +440,10 @@
     letter-spacing: 1px;
     transition: all 0.3s;
   }
-  #next-btn:hover, #back-btn:hover { border-color: #ffd700; color: #ffd700; }
+  #next-btn:hover, #back-btn:hover, #back-btn-2:hover, #next-btn-mode:hover { border-color: #ffd700; color: #ffd700; }
+  #next-btn-mode {
+    margin-top: 4px;
+  }
 
   /* ── Market Popup ── */
   #market-overlay {
@@ -1060,11 +1192,51 @@
       <div class="step-dot active" id="step-dot-1">1</div>
       <div class="step-line"></div>
       <div class="step-dot" id="step-dot-2">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="step-dot-3">3</div>
     </div>
 
-    <!-- ─── STEP 1: Board Size ─── -->
+    <!-- ─── STEP 1: Game Mode ─── -->
     <div class="setup-step" id="setup-step-1">
-      <div class="setup-subtitle" id="step1-desc">Önce oyun tahtasının büyüklüğünü seçin. Bir kenarda kaç bölge olacağını belirleyin.</div>
+      <div class="setup-subtitle" id="step1-desc">Önce oyun modunu seç. İki kişi mi yoksa bilgisayara karşı mı oynamak istiyorsun?</div>
+
+      <div class="mode-cards">
+        <div class="mode-card" data-mode="pvp" onclick="selectMode('pvp')">
+          <div class="mode-icon">👥</div>
+          <div class="mode-title" id="lbl-mode-pvp">2 KİŞİLİK</div>
+          <div class="mode-sub" id="lbl-mode-pvp-sub">Aynı bilgisayarda iki kişi</div>
+        </div>
+        <div class="mode-card" data-mode="ai" onclick="selectMode('ai')">
+          <div class="mode-icon">🤖</div>
+          <div class="mode-title" id="lbl-mode-ai">BİLGİSAYARA KARŞI</div>
+          <div class="mode-sub" id="lbl-mode-ai-sub">Yapay zekaya karşı</div>
+        </div>
+      </div>
+
+      <div id="difficulty-section">
+        <div class="difficulty-label" id="lbl-difficulty">ZORLUK SEVİYESİ</div>
+        <div class="difficulty-cards">
+          <div class="diff-card" data-diff="easy" onclick="selectDifficulty('easy')">
+            <div class="diff-title" id="lbl-diff-easy">KOLAY</div>
+            <div class="diff-sub" id="lbl-diff-easy-sub">Yavaş düşünür, sık hata yapar</div>
+          </div>
+          <div class="diff-card" data-diff="medium" onclick="selectDifficulty('medium')">
+            <div class="diff-title" id="lbl-diff-medium">ORTA</div>
+            <div class="diff-sub" id="lbl-diff-medium-sub">Dengeli, ara sıra hata yapar</div>
+          </div>
+          <div class="diff-card" data-diff="hard" onclick="selectDifficulty('hard')">
+            <div class="diff-title" id="lbl-diff-hard">ZOR</div>
+            <div class="diff-sub" id="lbl-diff-hard-sub">Hızlı, neredeyse hiç hata yapmaz</div>
+          </div>
+        </div>
+      </div>
+
+      <button id="next-btn-mode" class="disabled" onclick="goToStep2()"><span class="lbl-next">DEVAM ET →</span></button>
+    </div>
+
+    <!-- ─── STEP 2: Board Size ─── -->
+    <div class="setup-step" id="setup-step-2" style="display:none">
+      <div class="setup-subtitle" id="step2-desc">Şimdi oyun tahtasının büyüklüğünü seçin. Bir kenarda kaç bölge olacağını belirleyin.</div>
 
       <div class="size-selector">
         <button class="size-btn" onclick="changeEdge(-1)">−</button>
@@ -1083,12 +1255,15 @@
         <span id="size-stats-range">Önerilen min: <strong style="color:#ffd700">4 - 60</strong></span>
       </div>
 
-      <button id="next-btn" onclick="goToStep2()"><span class="lbl-next">DEVAM ET →</span></button>
+      <div class="step-buttons">
+        <button id="back-btn-2" onclick="goToStep1()"><span class="lbl-back">← GERİ</span></button>
+        <button id="next-btn" onclick="goToStep3()"><span class="lbl-next">DEVAM ET →</span></button>
+      </div>
     </div>
 
-    <!-- ─── STEP 2: Number Range ─── -->
-    <div class="setup-step" id="setup-step-2" style="display:none">
-      <div class="setup-subtitle" id="step2-desc">Şimdi sayı aralığını belirleyin. Her turda bu aralıktan rastgele bir çift sayı seçilecek ve iki asalın toplamı olarak yazmanız istenecektir.</div>
+    <!-- ─── STEP 3: Number Range ─── -->
+    <div class="setup-step" id="setup-step-3" style="display:none">
+      <div class="setup-subtitle" id="step3-desc">Son olarak sayı aralığını belirleyin. Her turda bu aralıktan rastgele bir çift sayı seçilecek ve iki asalın toplamı olarak yazmanız istenecektir.</div>
 
       <label id="range-label">Sayı Aralığı (çift sayılar):</label>
       <div class="setup-row">
@@ -1103,7 +1278,7 @@
       </div>
 
       <div class="step-buttons">
-        <button id="back-btn" onclick="goToStep1()"><span class="lbl-back">← GERİ</span></button>
+        <button id="back-btn" onclick="goToStep2()"><span class="lbl-back">← GERİ</span></button>
         <button id="start-btn" onclick="startGame()">OYUNU BAŞLAT</button>
       </div>
     </div>
@@ -1180,7 +1355,7 @@
 
     <!-- Player 2 -->
     <div class="player-panel p2" id="panel-p2">
-      <div class="player-name" id="p2-name">KIRMIZI ŞÖVALYE</div>
+      <div class="player-name"><span id="p2-name">KIRMIZI ŞÖVALYE</span><span id="p2-ai-badge" class="ai-badge" style="display:none"></span></div>
       <div class="warrior-container"><canvas id="warrior2-canvas" width="90" height="105"></canvas></div>
       <div class="power-section">
         <div class="power-label"><span class="lbl-power">Kale</span><span id="p2-power-text">❤❤❤</span></div>
@@ -1249,8 +1424,25 @@ const LANG = {
     title: 'GOLDBACH SEFERİ',
     subtitle: 'Bilim Projesi • Goldbach Sanısı Keşif Oyunu',
     setupTitle: 'GOLDBACH SEFERİ',
-    step1Desc: 'Önce oyun tahtasının büyüklüğünü seçin. Bir kenarda kaç bölge olacağını belirleyin.',
-    step2Desc: 'Şimdi sayı aralığını belirleyin. Her turda bu aralıktan rastgele bir çift sayı seçilecek ve iki asalın toplamı olarak yazmanız istenecektir.',
+    step1Desc: 'Önce oyun modunu seç. İki kişi mi yoksa bilgisayara karşı mı oynamak istiyorsun?',
+    step2Desc: 'Şimdi oyun tahtasının büyüklüğünü seçin. Bir kenarda kaç bölge olacağını belirleyin.',
+    step3Desc: 'Son olarak sayı aralığını belirleyin. Her turda bu aralıktan rastgele bir çift sayı seçilecek ve iki asalın toplamı olarak yazmanız istenecektir.',
+    modePvp: '2 KİŞİLİK',
+    modePvpSub: 'Aynı bilgisayarda iki kişi',
+    modeAi: 'BİLGİSAYARA KARŞI',
+    modeAiSub: 'Yapay zekaya karşı',
+    difficultyLabel: 'ZORLUK SEVİYESİ',
+    diffEasy: 'KOLAY',
+    diffEasySub: 'Yavaş düşünür, sık hata yapar',
+    diffMedium: 'ORTA',
+    diffMediumSub: 'Dengeli, ara sıra hata yapar',
+    diffHard: 'ZOR',
+    diffHardSub: 'Hızlı, neredeyse hiç hata yapmaz',
+    aiBadgeEasy: 'KOLAY BOT',
+    aiBadgeMedium: 'ORTA BOT',
+    aiBadgeHard: 'ZOR BOT',
+    aiThinking: 'Bilgisayar düşünüyor…',
+    p2NameAi: 'BİLGİSAYAR',
     edge: 'kenar',
     cellsLabel: 'bölge',
     edgeFullLabel: 'bölge / kenar',
@@ -1437,8 +1629,25 @@ const LANG = {
     title: 'GOLDBACH QUEST',
     subtitle: 'Science Project • Goldbach Conjecture Discovery Game',
     setupTitle: 'GOLDBACH QUEST',
-    step1Desc: 'First, choose the board size. Pick how many cells will be on each edge.',
-    step2Desc: 'Now choose the number range. Each turn a random even number from this range will be picked and you will need to express it as the sum of two primes.',
+    step1Desc: 'First, choose the game mode. Two players or against the computer?',
+    step2Desc: 'Now choose the board size. Pick how many cells will be on each edge.',
+    step3Desc: 'Finally, choose the number range. Each turn a random even number from this range will be picked and you will need to express it as the sum of two primes.',
+    modePvp: '2 PLAYERS',
+    modePvpSub: 'Two people on the same computer',
+    modeAi: 'VS COMPUTER',
+    modeAiSub: 'Play against the AI',
+    difficultyLabel: 'DIFFICULTY',
+    diffEasy: 'EASY',
+    diffEasySub: 'Thinks slowly, makes lots of mistakes',
+    diffMedium: 'MEDIUM',
+    diffMediumSub: 'Balanced, sometimes mistakes',
+    diffHard: 'HARD',
+    diffHardSub: 'Fast, almost never mistakes',
+    aiBadgeEasy: 'EASY BOT',
+    aiBadgeMedium: 'MEDIUM BOT',
+    aiBadgeHard: 'HARD BOT',
+    aiThinking: 'Computer is thinking…',
+    p2NameAi: 'COMPUTER',
     edge: 'edge',
     cellsLabel: 'cells',
     edgeFullLabel: 'cells / edge',
@@ -1649,16 +1858,32 @@ function applyLang() {
   document.getElementById('setup-title').textContent = L.setupTitle;
   document.getElementById('step1-desc').textContent = L.step1Desc;
   document.getElementById('step2-desc').textContent = L.step2Desc;
+  document.getElementById('step3-desc').textContent = L.step3Desc;
+
+  // Mode + difficulty step labels
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setText('lbl-mode-pvp', L.modePvp);
+  setText('lbl-mode-pvp-sub', L.modePvpSub);
+  setText('lbl-mode-ai', L.modeAi);
+  setText('lbl-mode-ai-sub', L.modeAiSub);
+  setText('lbl-difficulty', L.difficultyLabel);
+  setText('lbl-diff-easy', L.diffEasy);
+  setText('lbl-diff-easy-sub', L.diffEasySub);
+  setText('lbl-diff-medium', L.diffMedium);
+  setText('lbl-diff-medium-sub', L.diffMediumSub);
+  setText('lbl-diff-hard', L.diffHard);
+  setText('lbl-diff-hard-sub', L.diffHardSub);
+
   document.getElementById('size-edge-label').textContent = L.edgeFullLabel;
   document.getElementById('range-label').textContent = L.rangeLabel;
   document.getElementById('start-btn').textContent = L.startBtn;
   document.querySelectorAll('.lbl-next').forEach(el => el.textContent = L.next);
   document.querySelectorAll('.lbl-back').forEach(el => el.textContent = L.back);
   if (typeof updateSizePreview === 'function') updateSizePreview();
-  // If step 2 is visible, refresh its info text in the new language
-  const step2 = document.getElementById('setup-step-2');
-  if (step2 && step2.style.display !== 'none' && typeof refreshStep2 === 'function') {
-    refreshStep2();
+  // If step 3 is visible, refresh its info text in the new language
+  const step3 = document.getElementById('setup-step-3');
+  if (step3 && step3.style.display !== 'none' && typeof refreshStep3 === 'function') {
+    refreshStep3();
   }
   // Refresh info modal if open
   if (typeof _modalOpenType !== 'undefined' && _modalOpenType) {
@@ -1668,7 +1893,21 @@ function applyLang() {
   document.getElementById('header-subtitle').textContent = L.subtitle;
   document.getElementById('lang-toggle').textContent = currentLang === 'tr' ? 'EN' : 'TR';
   document.getElementById('p1-name').textContent = L.p1Name;
-  document.getElementById('p2-name').textContent = L.p2Name;
+  // P2 name reflects AI mode if active
+  if (state.gameMode === 'ai') {
+    document.getElementById('p2-name').textContent = L.p2NameAi;
+    const badge = document.getElementById('p2-ai-badge');
+    if (badge) {
+      badge.style.display = 'inline-block';
+      badge.className = 'ai-badge ' + state.aiDifficulty;
+      const badgeKey = 'aiBadge' + state.aiDifficulty.charAt(0).toUpperCase() + state.aiDifficulty.slice(1);
+      badge.textContent = L[badgeKey] || '';
+    }
+  } else {
+    document.getElementById('p2-name').textContent = L.p2Name;
+    const badge = document.getElementById('p2-ai-badge');
+    if (badge) badge.style.display = 'none';
+  }
   document.querySelectorAll('.lbl-power').forEach(el => el.textContent = L.power);
   document.querySelectorAll('.lbl-score').forEach(el => el.textContent = L.score);
   document.querySelectorAll('.lbl-territory').forEach(el => el.textContent = L.territory);
@@ -2172,7 +2411,12 @@ const state = {
   turnCount: 0,
   pickAnimating: false,
   placementsLeft: 0,
-  _wrongDetails: []
+  _wrongDetails: [],
+  // ── AI / mode state ──
+  gameMode: 'pvp',          // 'pvp' or 'ai'
+  aiDifficulty: 'medium',   // 'easy' | 'medium' | 'hard'
+  aiPlayer: 2,              // which player is the AI (when gameMode === 'ai')
+  aiTimers: []              // pending AI setTimeout ids (for cancellation)
 };
 
 function $(id) { return document.getElementById(id); }
@@ -2256,23 +2500,81 @@ function drawBoardPreview(rings) {
   }
 }
 
+function _setStepActive(n) {
+  for (let i = 1; i <= 3; i++) {
+    const step = $('setup-step-' + i);
+    const dot = $('step-dot-' + i);
+    if (step) step.style.display = (i === n) ? 'block' : 'none';
+    if (dot) dot.classList.toggle('active', i === n);
+  }
+}
+
 function goToStep1() {
-  $('setup-step-1').style.display = 'block';
-  $('setup-step-2').style.display = 'none';
-  $('step-dot-1').classList.add('active');
-  $('step-dot-2').classList.remove('active');
-  updateSizePreview();
+  _setStepActive(1);
+  // Restore card selections from current state so the user sees what they picked.
+  document.querySelectorAll('.mode-card').forEach(el =>
+    el.classList.toggle('selected', el.dataset.mode === state.gameMode));
+  const diffSection = $('difficulty-section');
+  if (state.gameMode === 'ai') {
+    diffSection.classList.add('visible');
+    document.querySelectorAll('.diff-card').forEach(el =>
+      el.classList.toggle('selected', el.dataset.diff === state.aiDifficulty));
+  } else {
+    diffSection.classList.remove('visible');
+    document.querySelectorAll('.diff-card').forEach(el => el.classList.remove('selected'));
+  }
+  _refreshNextBtnMode();
 }
 
 function goToStep2() {
-  $('setup-step-1').style.display = 'none';
-  $('setup-step-2').style.display = 'block';
-  $('step-dot-1').classList.remove('active');
-  $('step-dot-2').classList.add('active');
-  refreshStep2();
+  if (!_isModeStepValid()) return;
+  _setStepActive(2);
+  updateSizePreview();
 }
 
-function refreshStep2() {
+function goToStep3() {
+  _setStepActive(3);
+  refreshStep3();
+}
+
+function _isModeStepValid() {
+  if (state.gameMode === 'pvp') return true;
+  if (state.gameMode === 'ai' && state.aiDifficulty) return true;
+  return false;
+}
+
+function _refreshNextBtnMode() {
+  const btn = $('next-btn-mode');
+  if (!btn) return;
+  btn.classList.toggle('disabled', !_isModeStepValid());
+}
+
+function selectMode(mode) {
+  state.gameMode = mode;
+  document.querySelectorAll('.mode-card').forEach(el =>
+    el.classList.toggle('selected', el.dataset.mode === mode));
+  const diffSection = $('difficulty-section');
+  if (mode === 'ai') {
+    diffSection.classList.add('visible');
+    // Auto-select medium if nothing chosen yet
+    if (!state.aiDifficulty) state.aiDifficulty = 'medium';
+    document.querySelectorAll('.diff-card').forEach(el =>
+      el.classList.toggle('selected', el.dataset.diff === state.aiDifficulty));
+  } else {
+    diffSection.classList.remove('visible');
+    document.querySelectorAll('.diff-card').forEach(el => el.classList.remove('selected'));
+  }
+  _refreshNextBtnMode();
+}
+
+function selectDifficulty(diff) {
+  state.aiDifficulty = diff;
+  document.querySelectorAll('.diff-card').forEach(el =>
+    el.classList.toggle('selected', el.dataset.diff === diff));
+  _refreshNextBtnMode();
+}
+
+function refreshStep3() {
   const r = getRingsForEdge(edgeCells);
   const minRange = getMinRangeForRings(r);
   const defRange = getDefaultRangeForRings(r);
@@ -2324,6 +2626,9 @@ function startGame() {
   state.rangeMax = max;
   state.phase = 'WAITING';
 
+  // Cancel any leftover AI timers from a prior game
+  aiCancel();
+
   $('setup-overlay').classList.add('hidden');
   $('range-display').textContent = t('rangeDisplay', { min, max });
   $('target-display').textContent = t('pickStart');
@@ -2334,6 +2639,9 @@ function startGame() {
   updatePlayerUI(2);
   setActivePanel();
   applyLang();
+
+  // The very first turn is the human's (player 1), so no AI bootstrap here.
+  // The AI takes over in nextTurn() once it becomes player 2's turn.
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2379,13 +2687,22 @@ function onNumberPicked(target) {
   $('all-decompositions').textContent = '';
   clearInputArea();
 
-  $('input-a').disabled = false;
-  $('input-b').disabled = false;
-  $('submit-btn').disabled = false;
-  $('input-a').focus();
+  if (isAITurn()) {
+    // Keep human inputs locked while the bot plays.
+    $('input-a').disabled = true;
+    $('input-b').disabled = true;
+    $('submit-btn').disabled = true;
+  } else {
+    $('input-a').disabled = false;
+    $('input-b').disabled = false;
+    $('submit-btn').disabled = false;
+    $('input-a').focus();
+  }
 
   state.phase = 'INPUT';
   startTimer();
+
+  if (isAITurn()) aiPlayInputPhase();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2645,6 +2962,9 @@ function nextTurn() {
   $('all-decompositions').textContent = '';
   $('placing-banner').classList.remove('visible');
   $('board-canvas').classList.remove('placing');
+
+  // If it's now the AI's turn, kick it off.
+  if (isAITurn()) startAITurn();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2691,13 +3011,16 @@ function openMarket(player) {
       </div>
       <span class="pkg-cost">${p.cost} ${t('points')}</span>
     `;
-    if (pl.score >= p.cost) {
+    if (pl.score >= p.cost && !isAITurn()) {
+      // Don't let the human click options during the AI's turn.
       div.onclick = () => buyTerritories(p.count, p.cost);
     }
     optionsDiv.appendChild(div);
   });
 
   $('market-overlay').classList.add('visible');
+
+  if (isAITurn()) aiHandleMarket(player);
 }
 
 function drawMarketKnight(ctx, player) {
@@ -2788,6 +3111,7 @@ function startPlacing() {
   $('board-canvas').classList.add('placing');
   $('placing-banner').classList.add('visible');
   updatePlacingBanner();
+  if (isAITurn()) aiHandlePlacement();
 }
 
 function updatePlacingBanner() {
@@ -2804,20 +3128,17 @@ function endPlacing() {
   nextTurn();
 }
 
-function handleBoardClick(e) {
-  if (state.phase !== 'PLACING' || state.placementsLeft <= 0) return;
-  const rect = boardCanvas.getBoundingClientRect();
-  const px = e.clientX - rect.left;
-  const py = e.clientY - rect.top;
-  const cell = getCellAtPixel(px, py);
-  if (!cell) return;
-
+// Performs the placement action on a single cell. Returns true on success,
+// false if the cell isn't valid for the current player. Handles castle
+// destruction (returns true and triggers win check; caller should stop).
+function tryPlaceOnCell(cell) {
+  if (state.phase !== 'PLACING' || state.placementsLeft <= 0) return false;
   const player = state.currentPlayer;
   const reachable = getReachableCells(player);
-  if (!reachable.has(cell)) return;
+  if (!reachable.has(cell)) return false;
 
   // Already mine? skip
-  if (cell.owner === player) return;
+  if (cell.owner === player) return false;
 
   if (cell.owner === 0) {
     // Claim empty cell
@@ -2829,11 +3150,14 @@ function handleBoardClick(e) {
       cell.hp--;
       state.placementsLeft--;
       if (cell.hp <= 0) {
-        // Castle destroyed — game over
+        // Castle destroyed — game over. Halt placements so the AI / a
+        // glitchy human click can't keep placing in the 600ms before
+        // checkCastleWin runs.
+        state.placementsLeft = 0;
         $('placing-banner').classList.remove('visible');
         $('board-canvas').classList.remove('placing');
         setTimeout(() => checkCastleWin(), 600);
-        return;
+        return true;
       }
     } else {
       // Regular enemy cell — neutralize
@@ -2847,6 +3171,19 @@ function handleBoardClick(e) {
   } else {
     updatePlacingBanner();
   }
+  return true;
+}
+
+function handleBoardClick(e) {
+  if (state.phase !== 'PLACING' || state.placementsLeft <= 0) return;
+  // Don't let the human click during the AI's turn.
+  if (isAITurn()) return;
+  const rect = boardCanvas.getBoundingClientRect();
+  const px = e.clientX - rect.left;
+  const py = e.clientY - rect.top;
+  const cell = getCellAtPixel(px, py);
+  if (!cell) return;
+  tryPlaceOnCell(cell);
 }
 
 function handleBoardMouseMove(e) {
@@ -2939,6 +3276,8 @@ function resetGame(skipConfirm) {
   if (!skipConfirm && state.phase !== 'GAME_OVER' && state.phase !== 'SETUP') {
     if (!confirm(t('resetConfirm'))) return;
   }
+  // Cancel pending AI timers from any in-flight turn
+  aiCancel();
   state.currentPlayer = 1;
   state.phase = 'SETUP';
   state.players[1] = { score: 0, discoveries: [] };
@@ -2947,6 +3286,8 @@ function resetGame(skipConfirm) {
   state.turnCount = 0;
   state._wrongDetails = [];
   state.placementsLeft = 0;
+  // Note: we keep gameMode / aiDifficulty so the user's prior pick is
+  // pre-selected on the setup screen — they can still change it.
   hoveredCell = null;
   if (state.timerInterval) clearInterval(state.timerInterval);
 
@@ -2956,6 +3297,9 @@ function resetGame(skipConfirm) {
   $('board-canvas').classList.remove('placing');
   $('setup-overlay').classList.remove('hidden');
   goToStep1();
+  // Refresh the P2 panel name/badge for the new mode (if any) — applyLang
+  // reads state.gameMode/aiDifficulty.
+  applyLang();
   $('p1-discoveries').innerHTML = `<div class="title lbl-history">${t('history')}</div>`;
   $('p2-discoveries').innerHTML = `<div class="title lbl-history">${t('history')}</div>`;
 
@@ -2995,11 +3339,294 @@ $('input-b').addEventListener('keydown', e => { if (e.key === 'Enter') submitAns
 $('submit-btn').addEventListener('click', submitAnswer);
 
 document.addEventListener('keydown', e => {
-  if (e.key === ' ' && state.phase === 'WAITING') {
+  if (e.key === ' ' && state.phase === 'WAITING' && !isAITurn()) {
     e.preventDefault();
     pickNumber();
   }
 });
+
+// ═══════════════════════════════════════════════════════
+//  AI ENGINE — plays Player 2 like a human, with mistakes
+// ═══════════════════════════════════════════════════════
+//
+// Per difficulty, the bot:
+//  1. Takes a "thinking" delay before picking a number
+//  2. Submits answers one-by-one — sometimes wrong (using "trap"
+//     numbers that look prime to a casual player: 1, 9, 15, 21, …),
+//     sometimes correct, with random per-answer think times
+//  3. Decides on a market package
+//  4. Places territories: easy=random, medium=mixed, hard=greedy
+//     toward the enemy castle (and finishes castle if adjacent).
+//
+const AI_CONFIG = {
+  easy: {
+    pickDelayMs: [700, 1300],
+    initialThinkMs: [2000, 3500],
+    perAnswerThinkMs: [3000, 5500],
+    findChance: 0.40,    // chance each correct decomp gets discovered
+    maxAttempts: 3,
+    wrongChance: 0.55,   // chance to insert a wrong attempt
+    tricks: [1, 9, 15, 21, 25, 27, 33, 35, 39, 49, 51, 55, 57, 65, 77, 91],
+    marketStrategy: 'cheapest',
+    skipMarketChance: 0.18,
+    placementStrategy: 'random'
+  },
+  medium: {
+    pickDelayMs: [500, 900],
+    initialThinkMs: [900, 1700],
+    perAnswerThinkMs: [1300, 2700],
+    findChance: 0.78,
+    maxAttempts: 6,
+    wrongChance: 0.18,
+    tricks: [1, 9, 15, 21, 25, 27, 33],
+    marketStrategy: 'mid',
+    skipMarketChance: 0.05,
+    placementStrategy: 'mixed'
+  },
+  hard: {
+    pickDelayMs: [300, 600],
+    initialThinkMs: [400, 900],
+    perAnswerThinkMs: [600, 1200],
+    findChance: 0.97,
+    maxAttempts: 12,
+    wrongChance: 0.04,
+    tricks: [1, 9, 15],
+    marketStrategy: 'best',
+    skipMarketChance: 0,
+    placementStrategy: 'attack'
+  }
+};
+
+function isAITurn() {
+  return state.gameMode === 'ai' && state.currentPlayer === state.aiPlayer;
+}
+
+function aiCfg() { return AI_CONFIG[state.aiDifficulty] || AI_CONFIG.medium; }
+
+function aiRand(range) { return range[0] + Math.random() * (range[1] - range[0]); }
+
+function aiSetTimeout(fn, ms) {
+  const id = setTimeout(() => {
+    state.aiTimers = state.aiTimers.filter(t => t !== id);
+    // Phase guards inside fn
+    if (state.gameMode === 'ai') fn();
+  }, ms);
+  state.aiTimers.push(id);
+  return id;
+}
+
+function aiCancel() {
+  state.aiTimers.forEach(clearTimeout);
+  state.aiTimers = [];
+}
+
+function aiSetThinkingIndicator(show) {
+  // Re-purpose target-display while it's the AI's turn (only during WAITING/ROLLING)
+  if (show) {
+    $('target-display').textContent = t('aiThinking');
+  } else if (state.phase === 'WAITING') {
+    $('target-display').textContent = t('pickStart');
+  }
+}
+
+// Called from nextTurn when it becomes the AI's turn (phase === WAITING).
+function startAITurn() {
+  if (!isAITurn() || state.phase !== 'WAITING') return;
+  const cfg = aiCfg();
+  $('pick-btn').disabled = true;
+  aiSetThinkingIndicator(true);
+  aiSetTimeout(() => {
+    if (state.phase === 'WAITING' && isAITurn()) {
+      pickNumber();
+    }
+  }, aiRand(cfg.pickDelayMs));
+}
+
+// Called from onNumberPicked once the rolling animation finishes.
+function aiPlayInputPhase() {
+  if (!isAITurn() || state.phase !== 'INPUT') return;
+  const cfg = aiCfg();
+
+  // Lock human inputs during AI turn — AI types the values and submits.
+  $('input-a').disabled = true;
+  $('input-b').disabled = true;
+  $('submit-btn').disabled = true;
+
+  // Build the action queue
+  const allDecomps = state.allDecomps.slice();
+  // Shuffle so it doesn't always solve in the same order.
+  for (let i = allDecomps.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allDecomps[i], allDecomps[j]] = [allDecomps[j], allDecomps[i]];
+  }
+  // Pick which decomps the bot will discover
+  const willFind = allDecomps.filter(() => Math.random() < cfg.findChance)
+                              .slice(0, cfg.maxAttempts);
+
+  const actions = [];
+  willFind.forEach((pair) => {
+    if (Math.random() < cfg.wrongChance && actions.length < cfg.maxAttempts - 1) {
+      actions.push({ type: 'wrong' });
+    }
+    actions.push({ type: 'correct', pair });
+  });
+  // Sometimes a final wrong shot when nothing else found
+  if (actions.length === 0 && Math.random() < 0.6) {
+    actions.push({ type: 'wrong' });
+  } else if (Math.random() < cfg.wrongChance / 2 && actions.length < cfg.maxAttempts) {
+    actions.push({ type: 'wrong' });
+  }
+
+  let cumDelay = aiRand(cfg.initialThinkMs);
+  actions.forEach((act) => {
+    aiSetTimeout(() => {
+      if (state.phase !== 'INPUT' || !isAITurn()) return;
+      let a, b;
+      if (act.type === 'correct') {
+        [a, b] = act.pair;
+      } else {
+        [a, b] = aiGenerateWrong(state.target, cfg.tricks);
+      }
+      // "Type" the values into the inputs (visible to the user).
+      $('input-a').value = a;
+      $('input-b').value = b;
+      updateInputSum();
+      // Brief pause then submit
+      aiSetTimeout(() => {
+        if (state.phase !== 'INPUT' || !isAITurn()) return;
+        submitAnswer();
+      }, 320);
+    }, cumDelay);
+    cumDelay += aiRand(cfg.perAnswerThinkMs);
+  });
+
+  // Wrap up the turn after the last attempt (only if timer hasn't run out
+  // and submitAnswer didn't auto-end the turn from finding all decomps).
+  aiSetTimeout(() => {
+    if (state.phase === 'INPUT' && isAITurn()) {
+      endTurn();
+    }
+  }, cumDelay + 500);
+}
+
+function aiGenerateWrong(target, tricks) {
+  // Mix two failure modes: (1) use a "trap" number that the bot mistakes
+  // for prime, (2) submit a pair that doesn't sum to target.
+  const mode = Math.random();
+  if (mode < 0.7) {
+    // Trap number that isn't prime
+    const trap = tricks[Math.floor(Math.random() * tricks.length)];
+    let other = target - trap;
+    if (other < 2) other = 2;
+    return [trap, other];
+  } else {
+    // Off-by-2 sum error
+    const off = Math.random() < 0.5 ? -2 : 2;
+    const half = Math.max(2, Math.floor(target / 2));
+    const a = (half % 2 === 0) ? half + 1 : half;
+    return [a, target - a + off];
+  }
+}
+
+// Called from openMarket when it's the AI's turn.
+function aiHandleMarket(player) {
+  if (!isAITurn()) return;
+  const cfg = aiCfg();
+  const pl = state.players[player];
+  const affordable = PRICES.filter(p => pl.score >= p.cost);
+  if (affordable.length === 0) {
+    // openMarket already schedules its own auto-close + nextTurn here, so
+    // we don't queue our own timer to avoid a double-advance.
+    return;
+  }
+
+  // Sometimes skip even when affordable (humans do this).
+  if (Math.random() < cfg.skipMarketChance) {
+    aiSetTimeout(() => skipMarket(), aiRand([1200, 2000]));
+    return;
+  }
+
+  let choice;
+  if (cfg.marketStrategy === 'best') {
+    choice = affordable[affordable.length - 1];
+  } else if (cfg.marketStrategy === 'mid') {
+    choice = affordable[Math.min(1, affordable.length - 1)];
+  } else {
+    choice = affordable[0];
+  }
+  aiSetTimeout(() => {
+    if (state.phase === 'MARKET' && isAITurn()) {
+      buyTerritories(choice.count, choice.cost);
+    }
+  }, aiRand([1300, 2300]));
+}
+
+// Called from startPlacing when it's the AI's turn.
+function aiHandlePlacement() {
+  if (!isAITurn() || state.phase !== 'PLACING') return;
+  if (state.placementsLeft <= 0) {
+    aiSetTimeout(() => endPlacing(), 400);
+    return;
+  }
+
+  const cfg = aiCfg();
+  const player = state.currentPlayer;
+  const reachable = Array.from(getReachableCells(player));
+  if (reachable.length === 0) {
+    aiSetTimeout(() => endPlacing(), 600);
+    return;
+  }
+
+  const enemyCastle = (player === 1 ? castles.right : castles.left);
+  const enemyAdjacent = reachable.filter(c => c.owner !== 0 && c.owner !== player);
+  const enemyCastleAdj = reachable.find(c => c.isCastle && c.owner !== player && c.owner !== 0);
+
+  const distToCastle = (c) =>
+    enemyCastle ? Math.hypot(c.x - enemyCastle.x, c.y - enemyCastle.y) : 0;
+
+  let target;
+  if (cfg.placementStrategy === 'attack') {
+    // 1) finish enemy castle if adjacent
+    if (enemyCastleAdj) {
+      target = enemyCastleAdj;
+    } else if (enemyAdjacent.length > 0) {
+      // 2) clear enemy regions closest to the castle
+      enemyAdjacent.sort((a, b) => distToCastle(a) - distToCastle(b));
+      target = enemyAdjacent[0];
+    } else {
+      // 3) advance toward the enemy castle
+      const sorted = reachable.slice().sort((a, b) => distToCastle(a) - distToCastle(b));
+      target = sorted[0];
+    }
+  } else if (cfg.placementStrategy === 'mixed') {
+    if (enemyCastleAdj && Math.random() < 0.85) {
+      target = enemyCastleAdj;
+    } else if (enemyAdjacent.length > 0 && Math.random() < 0.45) {
+      target = enemyAdjacent[Math.floor(Math.random() * enemyAdjacent.length)];
+    } else {
+      // Move toward the castle most of the time
+      const sorted = reachable.slice().sort((a, b) => distToCastle(a) - distToCastle(b));
+      const k = Math.min(2, sorted.length - 1);
+      target = sorted[Math.floor(Math.random() * (k + 1))];
+    }
+  } else {
+    // 'random' — easy mode: but if the castle is right there, take it anyway
+    if (enemyCastleAdj && Math.random() < 0.4) {
+      target = enemyCastleAdj;
+    } else {
+      target = reachable[Math.floor(Math.random() * reachable.length)];
+    }
+  }
+
+  aiSetTimeout(() => {
+    if (state.phase !== 'PLACING' || !isAITurn()) return;
+    tryPlaceOnCell(target);
+    // Continue placing the rest, or stop if endPlacing got triggered.
+    if (state.phase === 'PLACING' && state.placementsLeft > 0 && isAITurn()) {
+      aiSetTimeout(() => aiHandlePlacement(), aiRand([500, 950]));
+    }
+  }, aiRand([700, 1300]));
+}
 
 // ═══════════════════════════════════════════════════════
 //  MAIN LOOP
@@ -3023,6 +3650,7 @@ initStars();
 initBoard();
 applyLang();
 updateSizePreview();
+goToStep1();
 requestAnimationFrame(gameLoop);
 </script>
 </body>

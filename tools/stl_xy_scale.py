@@ -484,6 +484,73 @@ def lift_to_z0(mesh: Mesh) -> Mesh:
     return mesh.translate(0.0, 0.0, -minz)
 
 
+def make_pretty_supportless_castle_with_flag(
+    *,
+    base_across_mm: float,
+    base_height_mm: float = 3.0,
+    wall_height_mm: float = 14.0,
+    turret_height_mm: float = 18.5,
+    keep_height_mm: float = 20.7,
+    flag_extra_height_mm: float = 7.0,
+    flag_w_mm: float = 6.5,
+    flag_t_mm: float = 1.2,
+    tolerance_inset_mm: float = 0.9,
+) -> Mesh:
+    """
+    A single-body, supportless 'castle' token that fits a pentagon slot.
+    - Pentagon base prism (fits slot).
+    - 5 corner turrets inset so XY never exceeds base.
+    - Central keep, slightly taller.
+    - Vertical flag plate (supportless).
+    """
+    r = base_across_mm / 2.0
+    pent = regular_polygon_xy(5, r, rotation_rad=math.pi / 2.0)
+
+    # Base slab
+    base = make_prism_from_polygon_xy(pent, 0.0, base_height_mm)
+
+    # Main wall body (same footprint)
+    walls = make_prism_from_polygon_xy(pent, 0.0, wall_height_mm)
+    out = walls.union(base)
+
+    # Corner turrets (square prisms), placed near vertices but inset for tolerance.
+    inset = max(tolerance_inset_mm + 1.2, 2.2)
+    turret_half = max(1.4, min(2.3, r * 0.16))
+    tz0 = base_height_mm
+    tz1 = turret_height_mm
+    for i in range(5):
+        a = (math.pi / 2.0) + (2.0 * math.pi * i) / 5.0
+        px = (r - inset) * math.cos(a)
+        py = (r - inset) * math.sin(a)
+        turret = make_box(
+            (px - turret_half, py - turret_half, tz0),
+            (px + turret_half, py + turret_half, tz1),
+        )
+        out = out.union(turret)
+
+    # Central keep (rectangular), inset to stay inside base
+    keep_inset = max(tolerance_inset_mm + 2.2, 3.6)
+    kx0 = -r + keep_inset
+    kx1 = r - keep_inset
+    ky0 = -r + keep_inset
+    ky1 = r - keep_inset
+    keep = make_box((kx0, ky0, base_height_mm), (kx1, ky1, keep_height_mm))
+    out = out.union(keep)
+
+    # Flag: vertical thin plate attached on top of keep, near one side
+    (minx, miny, _), (maxx, maxy, maxz) = out.bounds()
+    fx = maxx - max(1.4, (maxx - minx) * 0.12) - flag_t_mm / 2.0
+    cy = (miny + maxy) / 2.0
+    flag = make_box(
+        (fx - flag_t_mm / 2.0, cy - flag_w_mm / 2.0, keep_height_mm - 2.0),
+        (fx + flag_t_mm / 2.0, cy + flag_w_mm / 2.0, keep_height_mm - 2.0 + flag_extra_height_mm),
+    )
+    out = out.union(flag)
+
+    # Ensure at z=0
+    return lift_to_z0(out)
+
+
 def scale_to_match_board_with_clearance(
     piece: Mesh, board_scale_xy: float, clearance_total_mm: float
 ) -> float:
