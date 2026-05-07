@@ -1433,11 +1433,11 @@ const LANG = {
     modeAiSub: 'Yapay zekaya karşı',
     difficultyLabel: 'ZORLUK SEVİYESİ',
     diffEasy: 'KOLAY',
-    diffEasySub: 'Yavaş düşünür, sık hata yapar',
+    diffEasySub: 'Çok yavaş, sık sık hata yapar, az ayrışım bulur',
     diffMedium: 'ORTA',
-    diffMediumSub: 'Dengeli, ara sıra hata yapar',
+    diffMediumSub: 'Ortalama bir oyuncu, ara sıra hata yapar',
     diffHard: 'ZOR',
-    diffHardSub: 'Hızlı, neredeyse hiç hata yapmaz',
+    diffHardSub: 'İyi bir oyuncu, az hata yapar',
     aiBadgeEasy: 'KOLAY BOT',
     aiBadgeMedium: 'ORTA BOT',
     aiBadgeHard: 'ZOR BOT',
@@ -1638,11 +1638,11 @@ const LANG = {
     modeAiSub: 'Play against the AI',
     difficultyLabel: 'DIFFICULTY',
     diffEasy: 'EASY',
-    diffEasySub: 'Thinks slowly, makes lots of mistakes',
+    diffEasySub: 'Very slow, lots of mistakes, finds few decomps',
     diffMedium: 'MEDIUM',
-    diffMediumSub: 'Balanced, sometimes mistakes',
+    diffMediumSub: 'Average player, occasional mistakes',
     diffHard: 'HARD',
-    diffHardSub: 'Fast, almost never mistakes',
+    diffHardSub: 'Solid player, few mistakes',
     aiBadgeEasy: 'EASY BOT',
     aiBadgeMedium: 'MEDIUM BOT',
     aiBadgeHard: 'HARD BOT',
@@ -3358,39 +3358,48 @@ document.addEventListener('keydown', e => {
 //  4. Places territories: easy=random, medium=mixed, hard=greedy
 //     toward the enemy castle (and finishes castle if adjacent).
 //
+// Tuned to feel like a real human at the keyboard, NOT a robot.
+// Numbers are calibrated against the 30 s turn timer:
+//   easy   – often runs the clock down, finds little, lots of mistakes
+//   medium – average adult, uses most of the timer
+//   hard   – sharp player but not superhuman: still pauses, occasional slips
 const AI_CONFIG = {
   easy: {
-    pickDelayMs: [700, 1300],
-    initialThinkMs: [2000, 3500],
-    perAnswerThinkMs: [3000, 5500],
-    findChance: 0.40,    // chance each correct decomp gets discovered
+    pickDelayMs: [1200, 2200],         // slow reaction even before clicking
+    initialThinkMs: [3500, 6500],      // long stare at the number
+    perAnswerThinkMs: [4500, 7500],    // pencil-chewing between attempts
+    findChance: 0.22,                  // very few decompositions found
     maxAttempts: 3,
-    wrongChance: 0.55,   // chance to insert a wrong attempt
-    tricks: [1, 9, 15, 21, 25, 27, 33, 35, 39, 49, 51, 55, 57, 65, 77, 91],
+    wrongChance: 0.70,                 // confidently submits wrong answers
+    giveUpChance: 0.25,                // sometimes just doesn't try anything
+    tricks: [1, 9, 15, 21, 25, 27, 33, 35, 39, 45, 49, 51,
+             55, 57, 63, 65, 69, 75, 77, 81, 85, 87, 91, 93, 95],
     marketStrategy: 'cheapest',
-    skipMarketChance: 0.18,
+    skipMarketChance: 0.22,
     placementStrategy: 'random'
   },
-  medium: {
-    pickDelayMs: [500, 900],
-    initialThinkMs: [900, 1700],
-    perAnswerThinkMs: [1300, 2700],
-    findChance: 0.78,
-    maxAttempts: 6,
-    wrongChance: 0.18,
-    tricks: [1, 9, 15, 21, 25, 27, 33],
+  medium: {                            // average human player
+    pickDelayMs: [600, 1300],
+    initialThinkMs: [1800, 3500],
+    perAnswerThinkMs: [2500, 4500],
+    findChance: 0.55,
+    maxAttempts: 5,
+    wrongChance: 0.25,
+    giveUpChance: 0.05,
+    tricks: [1, 9, 15, 21, 25, 27, 33, 35],
     marketStrategy: 'mid',
-    skipMarketChance: 0.05,
+    skipMarketChance: 0.07,
     placementStrategy: 'mixed'
   },
-  hard: {
-    pickDelayMs: [300, 600],
-    initialThinkMs: [400, 900],
-    perAnswerThinkMs: [600, 1200],
-    findChance: 0.97,
-    maxAttempts: 12,
-    wrongChance: 0.04,
-    tricks: [1, 9, 15],
+  hard: {                              // good but still human
+    pickDelayMs: [400, 900],
+    initialThinkMs: [1000, 2200],
+    perAnswerThinkMs: [1500, 3000],
+    findChance: 0.82,
+    maxAttempts: 8,
+    wrongChance: 0.08,
+    giveUpChance: 0,
+    tricks: [1, 9, 15, 21, 25],
     marketStrategy: 'best',
     skipMarketChance: 0,
     placementStrategy: 'attack'
@@ -3452,14 +3461,26 @@ function aiPlayInputPhase() {
   $('input-b').disabled = true;
   $('submit-btn').disabled = true;
 
+  // Sometimes (mostly on easy) the bot just freezes and submits nothing —
+  // that's a real "I have no idea" reaction. The timer will end the turn.
+  if (Math.random() < (cfg.giveUpChance || 0)) {
+    return;
+  }
+
+  // Soft budget: stop scheduling once we get close to the 30 s turn deadline.
+  // Anything that doesn't fit is naturally cut off when the timer fires
+  // endTurn(); the queued aiSetTimeouts no-op via their phase check.
+  const TURN_TIME_MS = (typeof TURN_TIME === 'number' ? TURN_TIME : 30) * 1000;
+  const TIME_BUDGET_MS = TURN_TIME_MS - 1500; // small safety margin
+
   // Build the action queue
   const allDecomps = state.allDecomps.slice();
-  // Shuffle so it doesn't always solve in the same order.
+  // Shuffle so the bot doesn't always solve in the same order.
   for (let i = allDecomps.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [allDecomps[i], allDecomps[j]] = [allDecomps[j], allDecomps[i]];
   }
-  // Pick which decomps the bot will discover
+  // Pick which decomps the bot will actually discover.
   const willFind = allDecomps.filter(() => Math.random() < cfg.findChance)
                               .slice(0, cfg.maxAttempts);
 
@@ -3470,15 +3491,16 @@ function aiPlayInputPhase() {
     }
     actions.push({ type: 'correct', pair });
   });
-  // Sometimes a final wrong shot when nothing else found
-  if (actions.length === 0 && Math.random() < 0.6) {
+  // Even when the bot finds nothing, it usually still tries something wrong.
+  if (actions.length === 0 && Math.random() < 0.7) {
     actions.push({ type: 'wrong' });
   } else if (Math.random() < cfg.wrongChance / 2 && actions.length < cfg.maxAttempts) {
     actions.push({ type: 'wrong' });
   }
 
   let cumDelay = aiRand(cfg.initialThinkMs);
-  actions.forEach((act) => {
+  for (const act of actions) {
+    if (cumDelay > TIME_BUDGET_MS) break; // no point scheduling past timer
     aiSetTimeout(() => {
       if (state.phase !== 'INPUT' || !isAITurn()) return;
       let a, b;
@@ -3491,22 +3513,18 @@ function aiPlayInputPhase() {
       $('input-a').value = a;
       $('input-b').value = b;
       updateInputSum();
-      // Brief pause then submit
+      // Brief pause then submit (mimics moving from input to button).
       aiSetTimeout(() => {
         if (state.phase !== 'INPUT' || !isAITurn()) return;
         submitAnswer();
-      }, 320);
+      }, 350);
     }, cumDelay);
     cumDelay += aiRand(cfg.perAnswerThinkMs);
-  });
+  }
 
-  // Wrap up the turn after the last attempt (only if timer hasn't run out
-  // and submitAnswer didn't auto-end the turn from finding all decomps).
-  aiSetTimeout(() => {
-    if (state.phase === 'INPUT' && isAITurn()) {
-      endTurn();
-    }
-  }, cumDelay + 500);
+  // No explicit endTurn here: the bot is allowed to think until the timer
+  // fires endTurn() naturally. (submitAnswer auto-ends the turn early when
+  // the bot finds every decomposition, which is the only "early" exit.)
 }
 
 function aiGenerateWrong(target, tricks) {
