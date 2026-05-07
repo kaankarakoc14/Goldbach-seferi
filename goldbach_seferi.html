@@ -1433,11 +1433,11 @@ const LANG = {
     modeAiSub: 'Yapay zekaya karşı',
     difficultyLabel: 'ZORLUK SEVİYESİ',
     diffEasy: 'KOLAY',
-    diffEasySub: 'Çok yavaş, sık sık hata yapar, az ayrışım bulur',
+    diffEasySub: 'En az 2 ayrışım bulur, ara sıra hata yapar',
     diffMedium: 'ORTA',
-    diffMediumSub: 'Ortalama bir oyuncu, ara sıra hata yapar',
+    diffMediumSub: 'Ortalama bir oyuncu, çoğu ayrışımı bulur',
     diffHard: 'ZOR',
-    diffHardSub: 'İyi bir oyuncu, az hata yapar',
+    diffHardSub: 'Tecrübeli oyuncu, neredeyse hepsini bulur',
     aiBadgeEasy: 'KOLAY BOT',
     aiBadgeMedium: 'ORTA BOT',
     aiBadgeHard: 'ZOR BOT',
@@ -1638,11 +1638,11 @@ const LANG = {
     modeAiSub: 'Play against the AI',
     difficultyLabel: 'DIFFICULTY',
     diffEasy: 'EASY',
-    diffEasySub: 'Very slow, lots of mistakes, finds few decomps',
+    diffEasySub: 'Finds at least 2 decomps, sometimes mistakes',
     diffMedium: 'MEDIUM',
-    diffMediumSub: 'Average player, occasional mistakes',
+    diffMediumSub: 'Average player, finds most decomps',
     diffHard: 'HARD',
-    diffHardSub: 'Solid player, few mistakes',
+    diffHardSub: 'Experienced player, finds nearly all',
     aiBadgeEasy: 'EASY BOT',
     aiBadgeMedium: 'MEDIUM BOT',
     aiBadgeHard: 'HARD BOT',
@@ -3360,44 +3360,49 @@ document.addEventListener('keydown', e => {
 //
 // Tuned to feel like a real human at the keyboard, NOT a robot.
 // Numbers are calibrated against the 30 s turn timer:
-//   easy   – often runs the clock down, finds little, lots of mistakes
+//   easy   – decent player but limited; always tries at least a few times
 //   medium – average adult, uses most of the timer
 //   hard   – sharp player but not superhuman: still pauses, occasional slips
+//
+// Special fields:
+//   minFinds     – guaranteed minimum correct attempts (capped by decomp count)
+//   minAttempts  – guaranteed minimum total attempts (padded with wrongs)
 const AI_CONFIG = {
   easy: {
-    pickDelayMs: [1200, 2200],         // slow reaction even before clicking
-    initialThinkMs: [3500, 6500],      // long stare at the number
-    perAnswerThinkMs: [4500, 7500],    // pencil-chewing between attempts
-    findChance: 0.22,                  // very few decompositions found
-    maxAttempts: 3,
-    wrongChance: 0.70,                 // confidently submits wrong answers
-    giveUpChance: 0.25,                // sometimes just doesn't try anything
-    tricks: [1, 9, 15, 21, 25, 27, 33, 35, 39, 45, 49, 51,
-             55, 57, 63, 65, 69, 75, 77, 81, 85, 87, 91, 93, 95],
+    pickDelayMs: [800, 1500],
+    initialThinkMs: [1800, 3500],
+    perAnswerThinkMs: [2500, 4200],
+    findChance: 0.42,                  // base random chance
+    minFinds: 2,                       // ALWAYS finds at least 2 (when available)
+    maxAttempts: 4,
+    minAttempts: 3,                    // ALWAYS tries at least 3 things
+    wrongChance: 0.30,                 // some mistakes — not constant
+    giveUpChance: 0,
+    tricks: [1, 9, 15, 21, 25, 27, 33, 35, 39, 49, 51, 57, 65, 77, 91],
     marketStrategy: 'cheapest',
-    skipMarketChance: 0.22,
+    skipMarketChance: 0.10,
     placementStrategy: 'random'
   },
   medium: {                            // average human player
     pickDelayMs: [600, 1300],
     initialThinkMs: [1800, 3500],
-    perAnswerThinkMs: [2500, 4500],
-    findChance: 0.55,
-    maxAttempts: 5,
-    wrongChance: 0.25,
-    giveUpChance: 0.05,
-    tricks: [1, 9, 15, 21, 25, 27, 33, 35],
+    perAnswerThinkMs: [2300, 4200],
+    findChance: 0.65,
+    maxAttempts: 6,
+    wrongChance: 0.18,
+    giveUpChance: 0,
+    tricks: [1, 9, 15, 21, 25, 27, 33],
     marketStrategy: 'mid',
-    skipMarketChance: 0.07,
+    skipMarketChance: 0.05,
     placementStrategy: 'mixed'
   },
   hard: {                              // good but still human
     pickDelayMs: [400, 900],
     initialThinkMs: [1000, 2200],
-    perAnswerThinkMs: [1500, 3000],
-    findChance: 0.82,
+    perAnswerThinkMs: [1400, 2800],
+    findChance: 0.88,
     maxAttempts: 8,
-    wrongChance: 0.08,
+    wrongChance: 0.06,
     giveUpChance: 0,
     tricks: [1, 9, 15, 21, 25],
     marketStrategy: 'best',
@@ -3480,9 +3485,20 @@ function aiPlayInputPhase() {
     const j = Math.floor(Math.random() * (i + 1));
     [allDecomps[i], allDecomps[j]] = [allDecomps[j], allDecomps[i]];
   }
-  // Pick which decomps the bot will actually discover.
-  const willFind = allDecomps.filter(() => Math.random() < cfg.findChance)
-                              .slice(0, cfg.maxAttempts);
+  // Pick which decomps the bot will actually discover (random sampling).
+  let willFind = allDecomps.filter(() => Math.random() < cfg.findChance);
+
+  // Guarantee a minimum number of correct answers (capped by available decomps).
+  const wantFinds = Math.min(cfg.minFinds || 0, allDecomps.length);
+  if (willFind.length < wantFinds) {
+    const missing = allDecomps.filter(d =>
+      !willFind.some(w => w[0] === d[0] && w[1] === d[1])
+    );
+    while (willFind.length < wantFinds && missing.length > 0) {
+      willFind.push(missing.shift());
+    }
+  }
+  willFind = willFind.slice(0, cfg.maxAttempts);
 
   const actions = [];
   willFind.forEach((pair) => {
@@ -3495,6 +3511,12 @@ function aiPlayInputPhase() {
   if (actions.length === 0 && Math.random() < 0.7) {
     actions.push({ type: 'wrong' });
   } else if (Math.random() < cfg.wrongChance / 2 && actions.length < cfg.maxAttempts) {
+    actions.push({ type: 'wrong' });
+  }
+
+  // Guarantee a minimum number of total attempts (pad with extra wrongs).
+  const minAtt = Math.min(cfg.minAttempts || 0, cfg.maxAttempts);
+  while (actions.length < minAtt) {
     actions.push({ type: 'wrong' });
   }
 
