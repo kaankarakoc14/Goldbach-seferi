@@ -2408,6 +2408,7 @@ const state = {
   wrongAttempts: 0,
   timerLeft: 0,
   timerInterval: null,
+  turnEndsAt: 0,
   turnCount: 0,
   pickAnimating: false,
   placementsLeft: 0,
@@ -2802,23 +2803,49 @@ function clearInputArea() {
 // ═══════════════════════════════════════════════════════
 
 function startTimer() {
+  const ms = TURN_TIME * 1000;
+  state.turnEndsAt = Date.now() + ms;
   state.timerLeft = TURN_TIME;
   $('timer-text').textContent = t('seconds', { n: TURN_TIME });
   $('timer-fill').style.width = '100%';
+  $('timer-fill').style.background = 'linear-gradient(90deg, #ff3030, #ffd700, #00dd66)';
 
-  if (state.timerInterval) clearInterval(state.timerInterval);
-  state.timerInterval = setInterval(() => {
-    state.timerLeft--;
-    $('timer-text').textContent = t('seconds', { n: state.timerLeft });
-    $('timer-fill').style.width = `${(state.timerLeft / TURN_TIME) * 100}%`;
-    if (state.timerLeft <= 5) {
-      $('timer-fill').style.background = 'linear-gradient(90deg, #ff3030, #ff6030)';
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+
+  const tick = () => {
+    if (state.phase !== 'INPUT') {
+      if (state.timerInterval) {
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+      }
+      return;
     }
-    if (state.timerLeft <= 0) {
+    const remMs = state.turnEndsAt - Date.now();
+    const sec = Math.max(0, Math.ceil(remMs / 1000));
+    if (sec !== state.timerLeft) {
+      state.timerLeft = sec;
+      $('timer-text').textContent = t('seconds', { n: state.timerLeft });
+      $('timer-fill').style.width = `${(state.timerLeft / TURN_TIME) * 100}%`;
+      if (state.timerLeft <= 5) {
+        $('timer-fill').style.background = 'linear-gradient(90deg, #ff3030, #ff6030)';
+      }
+    }
+    if (remMs <= 0) {
       clearInterval(state.timerInterval);
-      endTurn();
+      state.timerInterval = null;
+      state.timerLeft = 0;
+      $('timer-text').textContent = t('seconds', { n: 0 });
+      $('timer-fill').style.width = '0%';
+      $('timer-fill').style.background = 'linear-gradient(90deg, #ff3030, #ff6030)';
+      if (state.phase === 'INPUT') endTurn();
     }
-  }, 1000);
+  };
+
+  state.timerInterval = setInterval(tick, 200);
+  tick();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2903,7 +2930,10 @@ function submitAnswer() {
 // ═══════════════════════════════════════════════════════
 
 function endTurn() {
-  if (state.timerInterval) clearInterval(state.timerInterval);
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
   state.phase = 'RESULT';
 
   $('input-a').disabled = true;
@@ -3223,7 +3253,10 @@ function checkCastleWin() {
 
 function gameOver(winner) {
   state.phase = 'GAME_OVER';
-  if (state.timerInterval) clearInterval(state.timerInterval);
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
   $('market-overlay').classList.remove('visible');
   $('placing-banner').classList.remove('visible');
 
@@ -3289,7 +3322,10 @@ function resetGame(skipConfirm) {
   // Note: we keep gameMode / aiDifficulty so the user's prior pick is
   // pre-selected on the setup screen — they can still change it.
   hoveredCell = null;
-  if (state.timerInterval) clearInterval(state.timerInterval);
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
 
   $('game-over').classList.remove('visible');
   $('market-overlay').classList.remove('visible');
@@ -3472,11 +3508,9 @@ function aiPlayInputPhase() {
     return;
   }
 
-  // Soft budget: stop scheduling once we get close to the 30 s turn deadline.
-  // Anything that doesn't fit is naturally cut off when the timer fires
-  // endTurn(); the queued aiSetTimeouts no-op via their phase check.
-  const TURN_TIME_MS = (typeof TURN_TIME === 'number' ? TURN_TIME : 30) * 1000;
-  const TIME_BUDGET_MS = TURN_TIME_MS - 1500; // small safety margin
+  const TURN_MS = TURN_TIME * 1000;
+  const RESERVE_END_MS = 1500;
+  const SUBMIT_AFTER_TYPE_MS = 350;
 
   // Build the action queue
   const allDecomps = state.allDecomps.slice();
@@ -3520,9 +3554,27 @@ function aiPlayInputPhase() {
     actions.push({ type: 'wrong' });
   }
 
-  let cumDelay = aiRand(cfg.initialThinkMs);
-  for (const act of actions) {
-    if (cumDelay > TIME_BUDGET_MS) break; // no point scheduling past timer
+  const nAct = actions.length;
+  if (nAct === 0) return;
+
+  const tFirst = aiRand(cfg.initialThinkMs);
+  const tLast = TURN_MS - RESERVE_END_MS - SUBMIT_AFTER_TYPE_MS;
+  const span = Math.max(tLast - tFirst, nAct * 650);
+
+  const delays = [];
+  for (let i = 0; i < nAct; i++) {
+    const lo = tFirst + (span * i) / nAct;
+    const hi = tFirst + (span * (i + 1)) / nAct;
+    delays.push(lo + Math.random() * Math.max(40, hi - lo));
+  }
+  for (let i = 0; i < nAct; i++) {
+    delays[i] = Math.min(delays[i], tLast);
+    if (i > 0 && delays[i] < delays[i - 1] + 450) {
+      delays[i] = Math.min(delays[i - 1] + 450, tLast);
+    }
+  }
+
+  actions.forEach((act, idx) => {
     aiSetTimeout(() => {
       if (state.phase !== 'INPUT' || !isAITurn()) return;
       let a, b;
@@ -3531,22 +3583,18 @@ function aiPlayInputPhase() {
       } else {
         [a, b] = aiGenerateWrong(state.target, cfg.tricks);
       }
-      // "Type" the values into the inputs (visible to the user).
       $('input-a').value = a;
       $('input-b').value = b;
       updateInputSum();
-      // Brief pause then submit (mimics moving from input to button).
       aiSetTimeout(() => {
         if (state.phase !== 'INPUT' || !isAITurn()) return;
         submitAnswer();
-      }, 350);
-    }, cumDelay);
-    cumDelay += aiRand(cfg.perAnswerThinkMs);
-  }
+      }, SUBMIT_AFTER_TYPE_MS);
+    }, delays[idx]);
+  });
 
-  // No explicit endTurn here: the bot is allowed to think until the timer
-  // fires endTurn() naturally. (submitAnswer auto-ends the turn early when
-  // the bot finds every decomposition, which is the only "early" exit.)
+  // Turn ends when wall-clock timer hits TURN_TIME (see startTimer) or when
+  // the last correct answer completes the decomposition list.
 }
 
 function aiGenerateWrong(target, tricks) {
